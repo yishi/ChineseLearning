@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>妈妈读书语音生成器</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>妈妈读书语音生成器</h1>
+        
+        <div class="upload-section">
+            <h2>上传爸爸或妈妈的声音样本</h2>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <input type="file" id="audioFile" accept="audio/*" required>
+                <small>支持的格式: WAV, MP3 (建议时长: 10-30秒)</small>
+            </form>
+        </div>
+
+        <div class="text-section">
+            <h2>输入要转换的文本</h2>
+            <textarea id="inputText" rows="4" placeholder="请输入要转换成语音的文本..." required></textarea>
+        </div>
+
+        <button id="generateBtn">生成语音</button>
+
+        <div class="result-section" style="display: none;">
+            <h2>生成结果</h2>
+            <audio id="resultAudio" controls></audio>
+            <button id="downloadBtn">下载音频</button>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html> 
