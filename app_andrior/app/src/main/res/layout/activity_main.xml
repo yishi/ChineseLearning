@@ -3,12 +3,38 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:gravity="center">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hello World!"
-        android:layout_gravity="center"/>
+        android:text="汉字学习"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="48dp"/>
+
+    <Button
+        android:id="@+id/startLearningButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="开始学习"
+        android:layout_marginBottom="16dp"
+        android:padding="16dp"/>
+
+    <Button
+        android:id="@+id/startReviewButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="开始复习"
+        android:layout_marginBottom="16dp"
+        android:padding="16dp"/>
+
+    <Button
+        android:id="@+id/statisticsButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="学习统计"
+        android:padding="16dp"/>
 
 </LinearLayout>
