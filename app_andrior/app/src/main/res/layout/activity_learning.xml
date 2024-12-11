@@ -92,6 +92,14 @@
 
             </LinearLayout>
         </androidx.cardview.widget.CardView>
+        <!-- 添加朗读按钮 -->
+        <Button
+            android:id="@+id/readButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="朗读"
+            android:layout_marginTop="8dp"/>
+
 
         <!-- 导航按钮 -->
         <LinearLayout

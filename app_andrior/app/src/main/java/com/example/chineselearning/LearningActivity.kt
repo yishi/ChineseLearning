@@ -1,11 +1,15 @@
 package com.example.chineselearning
 
-import android.graphics.Typeface
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import android.content.Intent
+import android.speech.tts.TextToSpeech
+import java.util.Locale
+import android.util.Log
+import android.graphics.Typeface  // 添加这行
 
 data class CharacterData(
     val character: String,
@@ -15,13 +19,15 @@ data class CharacterData(
     val level: Int // 难度级别
 )
 
-class LearningActivity : AppCompatActivity() {
+class LearningActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private lateinit var characterTextView: TextView
     private lateinit var pinyinTextView: TextView
     private lateinit var meaningTextView: TextView
     private lateinit var exampleTextView: TextView
     private lateinit var previousButton: Button
     private lateinit var nextButton: Button
+    private lateinit var readButton: Button
+    private lateinit var tts: TextToSpeech
 
     private var currentIndex = 0
     private val characters = listOf(
@@ -398,6 +404,9 @@ class LearningActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_learning)
 
+        // 初始化 TextToSpeech
+        tts = TextToSpeech(this, this)
+
         // 初始化视图
         characterTextView = findViewById(R.id.characterTextView)
         pinyinTextView = findViewById(R.id.pinyinTextView)
@@ -405,6 +414,16 @@ class LearningActivity : AppCompatActivity() {
         exampleTextView = findViewById(R.id.exampleTextView)
         previousButton = findViewById(R.id.previousButton)
         nextButton = findViewById(R.id.nextButton)
+        readButton = findViewById(R.id.readButton)
+
+        // 设置按钮点击事件
+        previousButton.setOnClickListener { showPreviousCharacter() }
+        nextButton.setOnClickListener { showNextCharacter() }
+
+        // 设置朗读按钮点击事件
+        readButton.setOnClickListener {
+            readCharacter(characters[currentIndex])
+        }
 
         // 设置自定义字体
         try {
@@ -415,27 +434,39 @@ class LearningActivity : AppCompatActivity() {
             Toast.makeText(this, "加载字体失败", Toast.LENGTH_SHORT).show()
         }
 
-        // 设置按钮点击事件
-        previousButton.setOnClickListener {
-            if (currentIndex > 0) {
-                currentIndex--
-                updateCharacter()
-            } else {
-                Toast.makeText(this, "已经是第一个汉字", Toast.LENGTH_SHORT).show()
-            }
-        }
-
-        nextButton.setOnClickListener {
-            if (currentIndex < characters.size - 1) {
-                currentIndex++
-                updateCharacter()
-            } else {
-                Toast.makeText(this, "已经是最后一个汉字", Toast.LENGTH_SHORT).show()
-            }
-        }
-
         // 显示第一个汉字
-        updateCharacter()
+        updateDisplay()
+    }
+
+    private fun showPreviousCharacter() {
+        if (currentIndex > 0) {
+            currentIndex--
+            updateDisplay()
+        }
+    }
+
+    private fun showNextCharacter() {
+        if (currentIndex < characters.size - 1) {
+            currentIndex++
+            updateDisplay()
+        }
+    }
+
+    private fun updateDisplay() {
+        val character = characters[currentIndex]
+        characterTextView.text = character.character
+        pinyinTextView.text = character.pinyin
+        meaningTextView.text = character.meaning
+        exampleTextView.text = character.example
+    }
+
+    private fun readCharacter(character: CharacterData) {
+        val textToRead = "${character.character}, ${character.example}"
+        speak(textToRead)
+    }
+
+    private fun speak(text: String) {
+        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "")
     }
 
     private fun updateCharacter() {
@@ -444,5 +475,28 @@ class LearningActivity : AppCompatActivity() {
         pinyinTextView.text = character.pinyin
         meaningTextView.text = character.meaning
         exampleTextView.text = character.example
+    }
+
+    override fun onInit(status: Int) {
+        if (status == TextToSpeech.SUCCESS) {
+            val result = tts.setLanguage(Locale.CHINESE)
+            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                Toast.makeText(this, "请安装中文语音包", Toast.LENGTH_LONG).show()
+
+                val installIntent = Intent()
+                installIntent.action = TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA
+                startActivity(installIntent)
+            }
+        } else {
+            Toast.makeText(this, "TTS初始化失败", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    override fun onDestroy() {
+        if (::tts.isInitialized) {
+            tts.stop()
+            tts.shutdown()
+        }
+        super.onDestroy()
     }
 }
