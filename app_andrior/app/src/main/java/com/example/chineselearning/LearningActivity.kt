@@ -10,6 +10,11 @@ import android.speech.tts.TextToSpeech
 import java.util.Locale
 import android.util.Log
 import android.graphics.Typeface  // 添加这行
+import androidx.lifecycle.ViewModelProvider
+import com.example.chineselearning.data.AppDatabase
+import com.example.chineselearning.data.CharacterRepository
+import com.example.chineselearning.viewmodel.LearningViewModel
+import com.example.chineselearning.viewmodel.LearningViewModelFactory
 
 data class CharacterData(
     val character: String,
@@ -28,11 +33,44 @@ class LearningActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private lateinit var nextButton: Button
     private lateinit var readButton: Button
     private lateinit var tts: TextToSpeech
-
+    private lateinit var viewModel: LearningViewModel
     private var currentIndex = 0
-    private val characters = listOf(
-        // 第一级汉字（1-100）
-        CharacterData("我", "wǒ", "I, me", "我是学生。(I am a student.)", 1),
+    private lateinit var characters: List<CharacterData>  // 添加字符列表
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_learning)
+
+        // 初始化 ViewModel
+        // 获取 Repository 实例
+        val database = AppDatabase.getDatabase(applicationContext)
+        val repository = CharacterRepository(database.characterDao())
+        // 使用 Factory 创建 ViewModel
+        val factory = LearningViewModelFactory(repository)
+        viewModel = ViewModelProvider(this, factory)[LearningViewModel::class.java]
+
+
+        // 初始化视图
+        initializeViews()
+
+        // 设置自定义字体
+        setCustomFonts()
+
+        // 初始化 TextToSpeech
+        tts = TextToSpeech(this, this)
+
+        // 获取上次学习进度
+        viewModel.getLastLearningProgress().observe(this) { progress ->
+            progress?.let {
+                currentIndex = it.lastLearnedIndex + 1  // 从上次的下一个开始
+                updateDisplay()
+            }
+        }
+
+        // 初始化汉字数据
+        characters = listOf(
+            // 第一级汉字（1-100）
+            CharacterData("我", "wǒ", "I, me", "我是学生。(I am a student.)", 1),
         CharacterData("你", "nǐ", "you", "你好！(Hello!)", 1),
         CharacterData("他", "tā", "he", "他是老师。(He is a teacher.)", 1),
         CharacterData("她", "tā", "she", "她是医生。(She is a doctor.)", 1),
@@ -400,13 +438,14 @@ class LearningActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         CharacterData("打", "dǎ", "to hit", "他在打篮球。(He is playing basketball.)", 5)
             )
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_learning)
+        // 显示第一个汉字
+        updateDisplay()
 
-        // 初始化 TextToSpeech
-        tts = TextToSpeech(this, this)
+        // 设置按钮点击事件
+        setupButtons()
+    }
 
+    private fun initializeViews() {
         // 初始化视图
         characterTextView = findViewById(R.id.characterTextView)
         pinyinTextView = findViewById(R.id.pinyinTextView)
@@ -415,27 +454,50 @@ class LearningActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         previousButton = findViewById(R.id.previousButton)
         nextButton = findViewById(R.id.nextButton)
         readButton = findViewById(R.id.readButton)
+    }
 
-        // 设置按钮点击事件
-        previousButton.setOnClickListener { showPreviousCharacter() }
-        nextButton.setOnClickListener { showNextCharacter() }
+    private fun setCustomFonts() {
+        val typeface = Typeface.createFromAsset(assets, "fonts/custom_font.ttf")
+        characterTextView.typeface = typeface
+        pinyinTextView.typeface = typeface
+        meaningTextView.typeface = typeface
+        exampleTextView.typeface = typeface
+    }
 
-        // 设置朗读按钮点击事件
+    private fun updateDisplay() {
+        if (characters.isNotEmpty() && currentIndex < characters.size) {
+            val character = characters[currentIndex]
+            characterTextView.text = character.character
+            pinyinTextView.text = character.pinyin
+            meaningTextView.text = character.meaning
+            exampleTextView.text = character.example
+
+            // 更新按钮状态
+            previousButton.isEnabled = currentIndex > 0
+            nextButton.isEnabled = currentIndex < characters.size - 1
+        }
+    }
+
+    private fun setupButtons() {
+        // 下一个按钮
+        nextButton.setOnClickListener {
+            // 保存当前学习进度
+            viewModel.saveProgress(currentIndex)
+            // 标记当前汉字为已学习
+            viewModel.markCharacterAsLearned(characters[currentIndex].id)
+            // 显示下一个汉字
+            showNextCharacter()
+        }
+
+        // 上一个按钮
+        previousButton.setOnClickListener {
+            showPreviousCharacter()
+        }
+
+        // 朗读按钮
         readButton.setOnClickListener {
             readCharacter(characters[currentIndex])
         }
-
-        // 设置自定义字体
-        try {
-            val typeface = Typeface.createFromAsset(assets, "fonts/simkai.ttf")
-            characterTextView.typeface = typeface
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Toast.makeText(this, "加载字体失败", Toast.LENGTH_SHORT).show()
-        }
-
-        // 显示第一个汉字
-        updateDisplay()
     }
 
     private fun showPreviousCharacter() {
