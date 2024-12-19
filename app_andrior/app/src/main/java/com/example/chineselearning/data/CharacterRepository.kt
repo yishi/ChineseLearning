@@ -1,8 +1,6 @@
 package com.example.chineselearning.data
 
 import androidx.lifecycle.LiveData
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import com.example.chineselearning.utils.ReviewIntervalCalculator
 
 class CharacterRepository(private val dao: CharacterDao) {
