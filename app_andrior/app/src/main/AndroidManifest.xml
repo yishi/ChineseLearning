@@ -31,6 +31,15 @@
             android:label="学习汉字"
             android:parentActivityName=".MainActivity" />
 
+        <activity
+            android:name=".ReviewActivity"
+            android:exported="false"
+            android:label="复习汉字" />
+
+        <activity
+            android:name=".StatisticsActivity"
+            android:exported="false" />
+
     </application>
 
 </manifest>

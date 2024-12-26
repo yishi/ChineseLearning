@@ -23,7 +23,6 @@
             app:cardElevation="4dp"
             app:cardCornerRadius="8dp">
 
-            <!-- 其余内容保持不变 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -49,6 +48,16 @@
                     android:layout_marginTop="16dp"
                     android:layout_marginBottom="16dp"
                     android:background="#DDDDDD"/>
+
+                <!-- 笔画数 -->
+                <TextView
+                    android:id="@+id/strokesTextView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:textSize="24sp"
+                    android:textColor="#666666"
+                    android:layout_marginBottom="8dp"/>
 
                 <!-- 拼音 -->
                 <TextView
@@ -92,40 +101,48 @@
 
             </LinearLayout>
         </androidx.cardview.widget.CardView>
-        <!-- 添加朗读按钮 -->
-        <Button
-            android:id="@+id/readButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="朗读"
-            android:layout_marginTop="8dp"/>
 
-
-        <!-- 导航按钮 -->
+        <!-- 按钮容器 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
+            android:orientation="vertical"
             android:layout_marginTop="24dp"
             android:gravity="center">
 
+            <!-- 朗读按钮 -->
             <Button
-                android:id="@+id/previousButton"
+                android:id="@+id/readButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="16dp"
-                android:text="上一个"
-                android:paddingStart="24dp"
-                android:paddingEnd="24dp"/>
+                android:text="朗读"
+                android:layout_marginBottom="16dp"/>
 
-            <Button
-                android:id="@+id/nextButton"
-                android:layout_width="wrap_content"
+            <!-- 导航按钮 -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:text="下一个"
-                android:paddingStart="24dp"
-                android:paddingEnd="24dp"/>
+                android:orientation="horizontal"
+                android:gravity="center">
+
+                <Button
+                    android:id="@+id/previousButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="16dp"
+                    android:text="上一个"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp"/>
+
+                <Button
+                    android:id="@+id/nextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:text="下一个"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp"/>
+            </LinearLayout>
         </LinearLayout>
 
     </LinearLayout>

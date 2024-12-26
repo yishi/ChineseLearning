@@ -3,8 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:gravity="center">
+    android:gravity="center"
+    android:padding="16dp">
 
     <TextView
         android:layout_width="wrap_content"
@@ -16,25 +16,22 @@
 
     <Button
         android:id="@+id/startLearningButton"
-        android:layout_width="match_parent"
+        android:layout_width="200dp"
         android:layout_height="wrap_content"
         android:text="开始学习"
-        android:layout_marginBottom="16dp"
-        android:padding="16dp"/>
+        android:layout_marginBottom="16dp"/>
 
     <Button
         android:id="@+id/startReviewButton"
-        android:layout_width="match_parent"
+        android:layout_width="200dp"
         android:layout_height="wrap_content"
         android:text="开始复习"
-        android:layout_marginBottom="16dp"
-        android:padding="16dp"/>
+        android:layout_marginBottom="16dp"/>
 
     <Button
         android:id="@+id/statisticsButton"
-        android:layout_width="match_parent"
+        android:layout_width="200dp"
         android:layout_height="wrap_content"
-        android:text="学习统计"
-        android:padding="16dp"/>
+        android:text="学习统计"/>
 
 </LinearLayout>

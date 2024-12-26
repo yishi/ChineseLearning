@@ -8,6 +8,6 @@ import androidx.room.ColumnInfo
 data class ReviewRecord(
     @PrimaryKey val characterId: Int,
     @ColumnInfo(name = "last_review_time") val lastReviewTime: Long,
-    @ColumnInfo(name = "review_count") val reviewCount: Int,
-    @ColumnInfo(name = "next_review_time") val nextReviewTime: Long  // 添加列名注解
+    @ColumnInfo(name = "next_review_time") val nextReviewTime: Long,
+    @ColumnInfo(name = "review_count") val reviewCount: Int
 )

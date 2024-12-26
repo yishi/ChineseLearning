@@ -10,16 +10,15 @@ import androidx.room.Update
 
 @Dao
 interface CharacterDao {
-    @Query("SELECT * FROM characters")
-    fun getAllCharacters(): Flow<List<CharacterData>>
 
-    @Query("""
-        SELECT c.* FROM characters c
-        INNER JOIN review_records rr ON c.id = rr.characterId
-        WHERE rr.next_review_time <= :currentTime
-        ORDER BY rr.next_review_time ASC
-    """)
-    fun getCharactersForReview(currentTime: Long): LiveData<List<CharacterData>>
+    @Query("SELECT * FROM characters")
+    suspend fun getAllCharacters(): List<CharacterData>
+
+    @Query("SELECT COUNT(*) FROM review_records")
+    suspend fun getReviewRecordsCount(): Int
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertInitialReviewRecords(records: List<ReviewRecord>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCharacter(character: CharacterData)
@@ -38,4 +37,39 @@ interface CharacterDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertReviewRecord(record: ReviewRecord)
+
+    @Query("""
+        SELECT c.* FROM characters c
+        INNER JOIN review_records rr ON c.id = rr.characterId
+        WHERE rr.next_review_time <= :currentTime
+        ORDER BY rr.next_review_time ASC
+    """)
+    suspend fun getCharactersForReview(currentTime: Long): List<CharacterData>
+
+    @Query("SELECT * FROM review_records")
+    suspend fun getAllReviewRecords(): List<ReviewRecord>
+
+    @Query("SELECT * FROM review_records WHERE characterId = :characterId")
+    suspend fun getReviewRecordForCharacter(characterId: Int): ReviewRecord?
+
+    @Query("""
+        SELECT c.* FROM characters c
+        INNER JOIN review_records rr ON c.id = rr.characterId
+    """)
+    suspend fun getAllLearnedCharacters(): List<CharacterData>
+
+    @Query("SELECT * FROM characters WHERE id IN (:ids)")
+    suspend fun getCharactersByIds(ids: List<Int>): List<CharacterData>
+
+    @Query("SELECT * FROM characters WHERE level = :level")
+    suspend fun getCharactersByLevel(level: Int): List<CharacterData>
+
+    @Query("SELECT * FROM characters WHERE id = :characterId")
+    suspend fun getCharacterById(characterId: Int): CharacterData?
+
+    @Query("SELECT * FROM characters")
+    suspend fun debugGetAllCharacters(): List<CharacterData>
+
+    @Query("SELECT * FROM review_records")
+    suspend fun debugGetAllReviewRecords(): List<ReviewRecord>
 }

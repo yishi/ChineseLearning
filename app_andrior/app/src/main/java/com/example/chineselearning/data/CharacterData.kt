@@ -24,17 +24,20 @@ data class CharacterData(
     @ColumnInfo(name = "examples")
     val examples: String,    // 例句
 
+    @ColumnInfo(name = "level")
+    val level: Int = 1,  // 添加 level 字段，默认为 1
+
     @ColumnInfo(name = "last_review_time")
-    val lastReviewTime: Long,  // 上次复习时间
+    var lastReviewTime: Long = 0L,
 
     @ColumnInfo(name = "next_review_time")
-    val nextReviewTime: Long,  // 下次复习时间
+    var nextReviewTime: Long = 0L,
 
     @ColumnInfo(name = "review_count")
-    val reviewCount: Int,      // 复习次数
+    var reviewCount: Int = 0,
 
     @ColumnInfo(name = "mastery_level")
-    val masteryLevel: Int,     // 掌握程度
+    var masteryLevel: Int = 0,
 
     @ColumnInfo(name = "is_learned")
     var isLearned: Boolean = false,  // 是否已学习
