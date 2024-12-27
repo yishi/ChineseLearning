@@ -6,8 +6,13 @@ import androidx.room.ColumnInfo
 
 @Entity(tableName = "learning_records")
 data class LearningRecord(
-    @PrimaryKey
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
+    @ColumnInfo(name = "character_id")
     val characterId: Int,
+
+    @ColumnInfo(name = "user_id")
+    val userId: Int,
 
     @ColumnInfo(name = "learned_time")
     val learnedTime: Long,

@@ -9,6 +9,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.chineselearning.data.CharacterData
 import com.example.chineselearning.data.CharacterRepository
 import com.example.chineselearning.data.ReviewRecord
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class ReviewViewModel(private val repository: CharacterRepository) : ViewModel() {
@@ -16,6 +19,9 @@ class ReviewViewModel(private val repository: CharacterRepository) : ViewModel()
     private var isImmediateReview = false
     private var currentCharacters = listOf<CharacterData>()
     private var currentIndex = 0
+    private val _currentCharacter = MutableStateFlow<CharacterData?>(null)
+    val currentCharacter: StateFlow<CharacterData?> = _currentCharacter.asStateFlow()
+
 
     fun setImmediateReview(immediate: Boolean) {
         isImmediateReview = immediate
@@ -43,7 +49,41 @@ class ReviewViewModel(private val repository: CharacterRepository) : ViewModel()
     fun updateReviewStatus(characterId: Int, remembered: Boolean) {
         viewModelScope.launch {
             repository.updateReviewStatus(characterId, remembered)
+            _currentCharacter.value = getNextCharacter()
         }
+    }
+
+    fun loadCharactersForReview() {
+        viewModelScope.launch {
+            try {
+                val characters = if (isImmediateReview) {
+                    Log.d("ReviewViewModel", "Getting all learned characters for immediate review")
+                    repository.getAllLearnedCharacters()
+                } else {
+                    Log.d("ReviewViewModel", "Getting characters due for review")
+                    repository.getCharactersForReview()
+                }
+
+                Log.d("ReviewViewModel", "Retrieved ${characters.size} characters")
+
+                currentCharacters = characters
+
+                currentIndex = 0
+
+                _currentCharacter.value = getCurrentCharacter()
+
+            } catch (e: Exception) {
+
+                Log.e("ReviewViewModel", "Error getting characters", e)
+
+                currentCharacters = emptyList()
+
+                _currentCharacter.value = null
+
+            }
+
+        }
+
     }
 
     suspend fun getAllReviewRecords(): List<ReviewRecord> {

@@ -1,154 +1,263 @@
 package com.example.chineselearning
 
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
-import android.widget.Toast
-import android.content.Intent
 import android.speech.tts.TextToSpeech
-import java.util.Locale
 import android.util.Log
-import android.graphics.Typeface
-import com.example.chineselearning.data.AppDatabase
-import com.example.chineselearning.data.CharacterRepository
-import com.example.chineselearning.data.CharacterData
-import com.example.chineselearning.databinding.ActivityLearningBinding
-import kotlinx.coroutines.launch
+import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
+import com.example.chineselearning.data.AppDatabase
+import com.example.chineselearning.data.CharacterData
+import com.example.chineselearning.data.CharacterRepository
+import kotlinx.coroutines.launch
+import java.util.Locale
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 
-class LearningActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
-    private lateinit var tts: TextToSpeech
-    private lateinit var binding: ActivityLearningBinding
+@OptIn(ExperimentalMaterial3Api::class)
+class LearningActivity : ComponentActivity(), TextToSpeech.OnInitListener {
     private lateinit var repository: CharacterRepository
+    private lateinit var tts: TextToSpeech
     private var currentLevel = 1
     private var currentCharacters = listOf<CharacterData>()
-    private var currentIndex = 0
+    private var currentIndex by mutableStateOf(0)
+    private var currentCharacter by mutableStateOf<CharacterData?>(null)
+    private var userId: Int = -1
+
+    // 修改字体声明方式
+    private val kaitiFont by lazy {
+        FontFamily(
+            Font(R.font.simkai)
+        )
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityLearningBinding.inflate(layoutInflater)
-        setContentView(binding.root)
 
-        // 初始化数据库和仓库
+        userId = intent.getIntExtra("userId", -1)
+        if (userId == -1) {
+            finish()
+            return
+        }
+
         val database = AppDatabase.getDatabase(applicationContext)
         repository = CharacterRepository(database.characterDao())
+        repository.setCurrentUser(userId)
 
-        // 获取传入的级别
         currentLevel = intent.getIntExtra("level", 1)
-
-        // 初始化 TTS
         tts = TextToSpeech(this, this)
 
-        // 设置自定义字体
-        setCustomFonts()
+        setContent {
+            MaterialTheme {
 
-        // 加载当前级别的汉字
-        loadCharactersForCurrentLevel()
-        setupButtons()
-    }
-
-    private fun loadCharactersForCurrentLevel() {
-        lifecycleScope.launch {
-            try {
-                currentCharacters = repository.getCharactersByLevel(currentLevel)
-                if (currentCharacters.isNotEmpty()) {
-                    showCurrentCharacter()
-                } else {
-                    Toast.makeText(this@LearningActivity, "当前级别没有可学习的汉字", Toast.LENGTH_SHORT).show()
-                    finish()
+                LaunchedEffect(Unit) {
+                    try {
+                        loadCharacters()
+                    } catch (e: Exception) {
+                        Log.e("LearningActivity", "Error loading characters", e)
+                        Toast.makeText(this@LearningActivity, "加载汉字时出错", Toast.LENGTH_SHORT).show()
+                    }
                 }
-            } catch (e: Exception) {
-                Log.e("LearningActivity", "Error loading characters", e)
-                Toast.makeText(this@LearningActivity, "加载汉字时出错", Toast.LENGTH_SHORT).show()
-                finish()
-            }
-        }
-    }
 
-    private fun showCurrentCharacter() {
-        if (currentIndex < currentCharacters.size) {
-            val character = currentCharacters[currentIndex]
-            binding.apply {
-                characterTextView.text = character.character
-                pinyinTextView.text = character.pinyin
-                meaningTextView.text = character.meaning
-                exampleTextView.text = character.examples
-                strokesTextView.text = "笔画：${character.strokes}"
-            }
-        }
-    }
+                Scaffold(
+                    topBar = {
+                        TopAppBar(
+                            title = { Text("学习 - 第${currentLevel}级") },
+                            navigationIcon = {
+                                IconButton(onClick = { finish() }) {
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowBack,
+                                        contentDescription = "返回"
+                                    )
+                                }
+                            },
+                            colors = TopAppBarDefaults.topAppBarColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        )
+                    }
+                ) { paddingValues ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues)
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // 汉字显示卡片
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 16.dp),
+                            elevation = CardDefaults.cardElevation(4.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(24.dp).fillMaxWidth(), // 添加 fillMaxWidth,
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center // 添加垂直居中
+                            ) {
+                                currentCharacter?.let { character ->
+                                    // 汉字
+                                    Text(
+                                        text = character.character,
+                                        style = MaterialTheme.typography.displayLarge.copy(
+                                            fontFamily = kaitiFont,
+                                            color = Color.Red
+                                        ),
+                                        modifier = Modifier.padding(bottom = 16.dp)
+                                    )
 
-    private fun setCustomFonts() {
-        try {
-            val assetManager = assets
-            val typeface = Typeface.createFromAsset(assetManager, "fonts/simkai.ttf")
-            binding.apply {
-                characterTextView.typeface = typeface
-            }
-            Log.d("LearningActivity", "Font loaded successfully")
-        } catch (e: Exception) {
-            Log.e("LearningActivity", "Font loading failed: ${e.message}", e)
-            Toast.makeText(this, "字体加载失败，使用系统默认字体", Toast.LENGTH_SHORT).show()
-        }
-    }
+                                    // 拼音
+                                    Text(
+                                        text = character.pinyin,
+                                        style = MaterialTheme.typography.headlineMedium,
+                                        modifier = Modifier.padding(bottom = 16.dp)
+                                    )
 
-    private fun setupButtons() {
-        binding.apply {
-            // 下一个按钮
-            nextButton.setOnClickListener {
-                if (currentIndex < currentCharacters.size - 1) {
-                    currentIndex++
-                    showCurrentCharacter()
+                                    // 释义
+                                    Text(
+                                        text = character.meaning,
+                                        style = MaterialTheme.typography.titleLarge,
+                                        modifier = Modifier.padding(bottom = 16.dp)
+                                    )
+
+                                    // 例句
+                                    Text(
+                                        text = character.examples,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.padding(bottom = 16.dp)
+                                    )
+
+                                    // 朗读按钮
+                                    Button(
+                                        onClick = { speakContent(character) },
+                                        modifier = Modifier
+                                            .padding(vertical = 8.dp)
+                                            .align(Alignment.CenterHorizontally) // 确保按钮居中
+                                    ) {
+                                        Text("朗读")
+                                    }
+                                }
+                            }
+                        }
+
+                        // 导航按钮
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 16.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            // 上一个按钮
+                            Button(
+                                onClick = {
+                                    if (currentIndex > 0) {
+                                        currentIndex--
+                                        currentCharacter = currentCharacters[currentIndex]
+                                    }
+                                },
+                                enabled = currentIndex > 0,
+                                modifier = Modifier.weight(1f).padding(end = 8.dp)
+                            ) {
+                                Text("上一个")
+                            }
+
+        // 下一个按钮
+                            Button(
+                                onClick = {
+                                    if (currentIndex + 1 < currentCharacters.size) {
+                                        currentIndex++
+                                        currentCharacter = currentCharacters[currentIndex]
+                                        lifecycleScope.launch {
+                                            repository.markCharacterAsLearned(currentCharacter!!.id)
+                                        }
+                                    } else {
+                                        Toast.makeText(this@LearningActivity, "本级别学习完成", Toast.LENGTH_SHORT).show()
+                                        finish()
+                                    }
+                                },
+                                modifier = Modifier.weight(1f).padding(start = 8.dp)
+                            ) {
+                                Text("下一个")
+                            }
+                        }
+                    }
                 }
             }
-
-            // 上一个按钮
-            previousButton.setOnClickListener {
-                if (currentIndex > 0) {
-                    currentIndex--
-                    showCurrentCharacter()
-                }
-            }
-
-            // 朗读按钮
-            readButton.setOnClickListener {
-                val character = currentCharacters.getOrNull(currentIndex)
-                character?.let {
-                    val textToRead = "${it.character}, ${it.examples}"
-                    tts.speak(textToRead, TextToSpeech.QUEUE_FLUSH, null, "")
-                }
-            }
         }
     }
 
-    override fun onDestroy() {
-        if (::tts.isInitialized) {
-            tts.stop()
-            tts.shutdown()
-        }
-        super.onDestroy()
+    private fun speakContent(character: CharacterData) {
+        val textToSpeak = """
+            ${character.pinyin}。
+            ${character.meaning}。
+            ${character.examples}
+        """.trimIndent()
+        tts.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, null, null)
     }
 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
             val result = tts.setLanguage(Locale.CHINESE)
             if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                Toast.makeText(this, "请安装中文语音包", Toast.LENGTH_LONG).show()
-                val installIntent = Intent()
-                installIntent.action = TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA
-                startActivity(installIntent)
+                Toast.makeText(this, "语音功能不可用", Toast.LENGTH_SHORT).show()
             }
         } else {
-            Toast.makeText(this, "TTS初始化失败", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "语音初始化失败", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun saveCurrentLevel() {
-        val sharedPrefs = getSharedPreferences(MainActivity.PREF_NAME, MODE_PRIVATE)
-        sharedPrefs.edit().putInt(MainActivity.KEY_LAST_LEVEL, currentLevel).apply()
+    override fun onDestroy() {
+            tts.stop()
+            tts.shutdown()
+        super.onDestroy()
     }
-
-    override fun onPause() {
-        super.onPause()
-        saveCurrentLevel()
+    private fun loadCharacters() {
+        lifecycleScope.launch {
+            try {
+                currentCharacters = repository.getCharactersByLevel(currentLevel)
+                currentIndex = 0
+            if (currentCharacters.isNotEmpty()) {
+                currentCharacter = currentCharacters[currentIndex]
+                repository.markCharacterAsLearned(currentCharacter!!.id)
+            } else {
+                // 当前级别学习完成，加载下一级
+                lifecycleScope.launch {
+                    val nextLevel = currentLevel + 1
+                    val nextLevelCharacters = repository.getCharactersByLevel(nextLevel)
+                    if (nextLevelCharacters.isNotEmpty()) {
+                        currentLevel = nextLevel
+                        currentCharacters = nextLevelCharacters
+                        currentIndex = 0
+                        currentCharacter = currentCharacters[0]
+                        repository.markCharacterAsLearned(currentCharacter!!.id)
+                    } else {
+                        Toast.makeText(
+                            this@LearningActivity,
+                            "已完成所有汉字学习",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        finish()
+                    }
+                }
+            }
+            } catch (e: Exception) {
+                Log.e("LearningActivity", "Error loading characters", e)
+                Toast.makeText(this@LearningActivity, "加载汉字时出错", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 }

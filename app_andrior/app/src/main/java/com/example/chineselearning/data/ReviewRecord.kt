@@ -6,8 +6,18 @@ import androidx.room.ColumnInfo
 
 @Entity(tableName = "review_records")
 data class ReviewRecord(
-    @PrimaryKey val characterId: Int,
-    @ColumnInfo(name = "last_review_time") val lastReviewTime: Long,
-    @ColumnInfo(name = "next_review_time") val nextReviewTime: Long,
-    @ColumnInfo(name = "review_count") val reviewCount: Int
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
+    val characterId: Int,
+    val userId: Int = 0,
+    @ColumnInfo(name = "review_count")
+    var reviewCount: Int = 0,
+    @ColumnInfo(name = "last_review_time")
+    var lastReviewTime: Long = 0,
+    @ColumnInfo(name = "next_review_time")
+    var nextReviewTime: Long = 0,
+    @ColumnInfo(name = "mastery_level")
+    var masteryLevel: Int = 0
 )
+
+

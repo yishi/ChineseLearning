@@ -1,11 +1,11 @@
 package com.example.chineselearning.viewmodel
 
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.launch
 import com.example.chineselearning.data.CharacterRepository
 import com.example.chineselearning.data.LearningProgress
+import kotlinx.coroutines.launch
 
 class LearningViewModel(
     private val repository: CharacterRepository  // 通过构造函数注入
@@ -16,13 +16,13 @@ class LearningViewModel(
         return repository.getLearningProgress(userId)
     }
 
-    fun saveProgress(currentIndex: Int) {
+    fun saveProgress(characterId: Int) {
         viewModelScope.launch {
             repository.saveLearningProgress(
                 LearningProgress(
                     userId = userId,
-                    lastLearnedIndex = currentIndex,
-                    lastLearnedTime = System.currentTimeMillis()
+                    lastCharacterId = characterId,
+                    lastUpdateTime = System.currentTimeMillis()
                 )
             )
         }
