@@ -1,0 +1,347 @@
+汉字学习应用设计文档
+
+1. 系统架构
+
+1.1 整体架构
+采用 MVVM (Model-View-ViewModel) 架构模式
+使用 Android Jetpack 组件库
+使用 Room 数据库进行本地数据存储
+使用 Kotlin 协程处理异步操作
+
+1.2 主要组件
+
+视图层 (View)
+LoginActivity: 用户登录和注册界面
+MainActivity: 应用主界面
+LearningActivity: 汉字学习界面
+ReviewActivity: 汉字复习界面
+StatisticsActivity: 学习统计界面
+
+视图模型层 (ViewModel)
+LearningViewModel: 处理学习相关的业务逻辑
+
+数据层 (Model)
+Repository: CharacterRepository
+DAO: UserDao, CharacterDao
+实体类: User, CharacterData, ReviewRecord, LearningProgress
+
+2. 数据库设计
+
+2.1 基础数据
+
+CharacterDataList（核心数据文件）
+位置：app/src/main/java/com/example/chineselearning/data/CharacterDataList.kt
+作用：存储所有预设的汉字学习数据
+重要性：
+1. 作为应用的核心数据源
+结构改动成本高（涉及数百个汉字数据）
+直接影响学习内容质量
+object CharacterDataList {
+    fun getCharacterList(): List<CharacterData> {
+        return listOf(
+            CharacterData(
+                id = 25,
+                character = "学",
+                pinyin = "xué",
+                meaning = "study, learn",
+                strokes = 8,
+                examples = "我学中文。(I study Chinese.)",
+                level = 1,
+                // ... 其他字段
+            ),
+            // ... 更多汉字
+        )
+    }
+}
+
+2.2 数据结构设计
+CharacterData（汉字数据结构）
+
+@Entity(tableName = "characters")
+data class CharacterData(
+    @PrimaryKey val id: Int,
+    val character: String,    // 汉字
+    val pinyin: String,      // 拼音
+    val meaning: String,     // 含义
+    val strokes: Int,        // 笔画数
+    val examples: String,    // 例句
+    val level: Int = 1,      // 难度级别
+    var lastReviewTime: Long = 0L,
+    var nextReviewTime: Long = 0L,
+    var reviewCount: Int = 0,
+    var masteryLevel: Int = 0,
+    var isLearned: Boolean = false,
+    var learnedTime: Long? = null
+)
+
+2.3 数据管理原则
+
+2.3.1 数据结构稳定性
+CharacterData 的字段设计需要考虑长期稳定性
+新增字段时需要考虑对现有数据的兼容性
+避免删除或修改已有字段
+
+2.3.2 数据更新策略
+新增汉字：追加到 CharacterDataList 末尾
+修改内容：仅限于文本内容的修正，不改变结构
+版本控制：使用数据库版本管理重大变更
+
+2.3.3 数据质量保证
+拼音准确性检查
+例句实用性验证
+难度级别合理性评估
+
+2.3.4 扩展性考虑
+预留扩展字段
+支持多语言释义
+考虑未来的功能需求
+
+2.5 数据表
+
+users 表
+
+   @Entity(tableName = "users")
+   data class User(
+       @PrimaryKey(autoGenerate = true) val id: Int,
+       val username: String,
+       val passwordHash: String,
+       val createdAt: Long
+   )
+
+review_records 表
+
+   @Entity(tableName = "review_records")
+   data class ReviewRecord(
+       @PrimaryKey(autoGenerate = true) val id: Int,
+       val characterId: Int,
+       val userId: Int,
+       val reviewCount: Int,
+       val lastReviewTime: Long,
+       val nextReviewTime: Long,
+       val masteryLevel: Int
+   )
+
+learning_progress 表
+
+   @Entity(tableName = "learning_progress")
+   data class LearningProgress(
+       @PrimaryKey(autoGenerate = true) val id: Int,
+       val userId: Int,
+       val lastCharacterId: Int,
+       val lastUpdateTime: Long
+   )
+
+3. 功能模块
+
+3.1 用户管理
+用户注册：支持用户名和密码注册
+用户登录：使用 SHA-256 加密密码
+会话管理：使用 userId 在活动间传递用户信息
+
+3.2 学习系统
+学习逻辑：
+      新用户：当新用户首次登录时，系统将从第一个汉字开始学习。这确保用户能够从基础开始，逐步掌握汉字。
+      老用户：当老用户登录时，系统将从上次学习过的汉字的下一个新汉字开始学习。这种方式能够帮助用户在已有基础上继续学习，提升学习效率。
+分级学习：每级包含10个汉字
+学习进度追踪：记录用户最后学习的汉字
+复习系统：根据艾宾浩斯遗忘曲线安排复习时间
+掌握度评估：基于复习次数和记忆效果判定
+
+学习进度更新逻辑
+
+ 1、学习记录的创建与更新：
+当用户学习一个汉字时，调用 markCharacterAsLearned(characterId: Int) 方法。
+方法首先检查当前用户 ID 是否有效。如果无效，则直接返回。
+记录当前时间，并创建一个新的学习记录 LearningRecord，包括汉字 ID、用户 ID、学习时间和学习状态（已学习）。
+将学习记录插入到数据库中。
+
+2. 学习进度的更新：
+在插入学习记录后，更新用户的学习进度 LearningProgress，包括用户 ID、最后学习的汉字 ID 和最后更新时间。
+通过 insertOrUpdateLearningProgress(progress) 方法将学习进度保存到数据库中。
+
+复习计划更新逻辑
+
+1、复习记录的获取：
+在获取汉字时，调用 getCharactersByLevel(level: Int) 方法。
+方法首先获取当前用户的学习进度，并记录最后学习的汉字 ID。
+根据学习进度，决定从哪个汉字开始继续学习：
+如果最后学习的汉字已学习，则从下一个汉字开始。
+如果最后学习的汉字未完全学习，则从该汉字继续。
+2、复习计划的计算：
+复习计划的计算基于用户的学习记录和学习进度。
+通过 getLearningRecordForCharacter(characterId: Int, userId: Int) 方法获取特定汉字的学习记录，判断该汉字是否已学习。
+统计用户的学习进度和复习记录，以便在用户界面中展示。
+
+统计指标的计算方法
+
+1、学习进度统计：
+统计用户已学习的汉字数量、当前学习的汉字 ID、最后学习时间等。
+通过 getAllLearnedCharacters(userId: Int) 方法获取用户已学习的所有汉字，并计算数量。
+2、复习记录统计：
+统计用户的复习记录，包括复习次数、下次复习时间等。
+通过 getAllReviewRecords(userId: Int) 方法获取用户的所有复习记录，并计算复习次数和下次复习时间。
+
+新用户与老用户登录后的不同展示
+
+新用户登录：
+新用户首次登录时，系统会初始化学习进度和复习记录。
+用户界面将展示该用户的学习目标和可学习的汉字列表。
+
+老用户登录：
+老用户登录时，系统会根据之前的学习进度和复习记录加载相应的汉字。
+用户界面将展示用户上次学习的汉字，并从该汉字开始继续学习。
+
+总结
+以上逻辑确保了用户在学习过程中能够实时更新学习进度和复习计划，同时提供了清晰的统计指标，帮助用户跟踪自己的学习情况。新用户和老用户的不同展示逻辑也增强了用户体验，使得每位用户都能根据自己的学习历史获得个性化的学习内容。
+
+3.3 复习间隔算法
+private fun calculateNextReviewTime(reviewCount: Int): Long {
+    return when (reviewCount) {
+        1 -> currentTime + 5分钟
+        2 -> currentTime + 30分钟
+        3 -> currentTime + 12小时
+        4 -> currentTime + 1天
+        5 -> currentTime + 2天
+        6 -> currentTime + 4天
+        7 -> currentTime + 7天
+        else -> currentTime + 15天
+    }
+}
+
+3.4 统计分析
+学习进度统计
+掌握汉字数量统计
+复习效果分析
+掌握度指标的说明文本
+
+4. 用户界面
+
+4.1 界面框架
+使用 Jetpack Compose 构建现代化 UI
+Material Design 3 设计规范
+响应式布局适配
+
+4.2 主要界面
+
+登录/注册界面：
+  用户名输入框
+  密码输入框（带密码遮罩）
+  登录/注册切换按钮
+  功能说明文本： 注册和登录功能旨在跟踪用户的学习进度，并根据记忆曲线为用户定制个性化的复习计划。此外，该功能还支持统计学习进度等相关功能。用户可以选择“随便看看”按钮，直接进入主页面，系统将自动从第一个汉字开始展示。
+“随便看看”按钮
+
+主界面：
+开始学习按钮
+开始复习按钮
+学习统计按钮
+
+学习界面：
+汉字显示
+## 字体配置
+### 存储位置
+- 字体文件路径：app/src/main/res/font/
+- 支持的字体：
+  - kaiti.ttf：楷体
+
+### 字体使用
+kotlin
+private val kaitiFont = FontFamily(Font(R.font.kaiti))
+
+进度指示
+语音播放功能
+
+- 卡片内容居中显示
+- 朗读按钮居中对齐
+- 上一个按钮状态根据当前索引动态更新
+- 使用 MaterialTheme 确保统一的字体样式
+
+###  复习界面
+- 使用 Card 组件显示汉字
+- 确保字体正确显示和加载
+- 居中对齐所有内容
+
+###  统计界面
+- 使用 LiveData 实现实时更新
+- 通过 observeAsState 在 Compose 中观察数据变化
+- 显示实时学习进度和统计数据
+
+###  数据更新机制
+- 学习记录实时同步到数据库
+- 统计数据通过 LiveData 自动更新
+- 使用 Room 数据库的观察者模式
+
+## 朗读功能规范
+### 学习模式
+- 朗读内容：拼音、释义和例句
+- 朗读顺序：拼音 → 释义 → 例句
+- 朗读间隔：使用句号分隔各部分
+
+### 复习模式
+- 初始仅显示汉字
+- 点击朗读按钮：朗读拼音
+- 显示释义后：朗读完整内容
+
+### TTS 配置
+- 语言：中文（简体）
+- 语速：正常
+- 音调：默认
+
+5. 安全性考虑
+密码使用 SHA-256 加密存储
+数据库访问通过 DAO 层封装
+用户认证状态检查
+
+6. 性能优化
+使用协程处理异步操作
+Room 数据库索引优化
+界面状态管理优化
+
+7. 后续优化方向
+7.1. 添加用户设置功能
+7.2 实现学习数据导出
+7.3 增加更多统计分析功能
+7.4. 优化复习算法
+7.5 添加离线语音包
+
+8. 数据维护指南（新增）
+8.1 CharacterDataList 维护原则
+
+8.1.1数据添加规范
+严格遵循既定的数据结构
+ID 唯一性检查
+保持难度递进性
+
+8.1.2 内容审核流程
+拼音准确性验证
+释义完整性检查
+例句实用性确认
+
+8.1.3 批量更新策略
+使用脚本工具进行批量修改
+保持数据备份
+更新前进行完整性测试
+
+8.1.4 版本控制
+记录所有重大数据变更
+维护更新日志
+确保数据库迁移脚本的正确性
+
+8.2 数据备份建议
+定期导出数据文件
+保存多个历史版本
+建立数据校验机制
+
+8.3 更新注意事项
+避免在生产环境直接修改数据
+确保新增数据符合既定格式
+测试环境验证后再推送更新
+
+9. 用户体验优化（新增）
+9.1 用户引导
+在登录和注册界面提供功能说明，帮助用户理解注册和登录的目的。
+提供“随便看看”按钮，允许用户快速访问主页面，增强用户体验。
+9.2 交互设计
+确保用户在注册和登录过程中获得清晰的反馈信息。
+提供简洁明了的界面，减少用户操作的复杂性。
+9.3 用户反馈机制
+收集用户对登录和注册流程的反馈，以便持续优化用户体验。

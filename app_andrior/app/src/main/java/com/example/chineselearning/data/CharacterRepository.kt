@@ -30,22 +30,18 @@ class CharacterRepository(private val dao: CharacterDao) {
         val currentTime = System.currentTimeMillis()
         Log.d("CharacterRepository", "Marking character $characterId as learned for user $currentUserId")
 
-        // 检查是否已经学习过
-        val existingRecord = dao.getLearningRecordForCharacter(characterId, currentUserId)
-        if (existingRecord == null) {
-            // 创建学习记录
-            dao.insertLearningRecord(
-                LearningRecord(
-                    characterId = characterId,
-                    userId = currentUserId,
-                    learnedTime = currentTime,
-                    isLearned = true
-                )
-            )
-            Log.d("CharacterRepository", "Created learning record for character $characterId")
+        // 更新学习记录
+        val learningRecord = LearningRecord(
+            characterId = characterId,
+            userId = currentUserId,
+            learnedTime = currentTime,
+            isLearned = true
+        )
+        dao.insertLearningRecord(learningRecord)
 
-        // 创建复习记录，确保立即可复习
-        val reviewRecord = ReviewRecord(
+
+            // 创建复习记录，确保立即可复习
+            val reviewRecord = ReviewRecord(
                 characterId = characterId,
                 userId = currentUserId,
                 reviewCount = 0,
@@ -53,19 +49,20 @@ class CharacterRepository(private val dao: CharacterDao) {
                 nextReviewTime = currentTime, // 当前时间，确保立即可复习
                 masteryLevel = 0
             )
-        dao.insertReviewRecord(reviewRecord)
-            Log.d("CharacterRepository",
+            dao.insertReviewRecord(reviewRecord)
+            Log.d(
+                "CharacterRepository",
                 "Created new learning and review records for character $characterId"
             )
-        }
+            // 更新学习进度
+            val progress = LearningProgress(
+                userId = currentUserId,
+                lastCharacterId = characterId,
+                lastUpdateTime = currentTime
+            )
+            dao.insertOrUpdateLearningProgress(progress)
+            Log.d("CharacterRepository", "Updated learning progress - LastCharID: $characterId")
 
-        // 更新学习进度
-        val progress = LearningProgress(
-            userId = currentUserId,
-            lastCharacterId = characterId,
-            lastUpdateTime = currentTime
-        )
-        dao.insertOrUpdateLearningProgress(progress)
     }
 
     // 在现有的 CharacterRepository 类中添加以下方法：
@@ -170,34 +167,58 @@ class CharacterRepository(private val dao: CharacterDao) {
     suspend fun getAllLearnedCharacters() = dao.getAllLearnedCharacters(currentUserId)
 
     suspend fun getCharactersByLevel(level: Int): List<CharacterData> {
+        Log.d("CharacterRepository", "Getting characters for level $level")
+
+        // 获取用户的学习进度
+        val progress = dao.getLearningProgressSync(currentUserId)
+        Log.d("CharacterRepository", "Current learning progress - LastCharID: ${progress?.lastCharacterId}")
+
+        // 获取该级别的所有字符
+        val characters = dao.getCharactersByLevel(level)
+
+        // 如果有学习进度，从上次学习的字符之后开始
+        return if (progress != null) {
+            // 获取该用户最后学习的字符
+            val lastLearned = dao.getLearningRecordForCharacter(progress.lastCharacterId, currentUserId)
+            if (lastLearned?.isLearned == true) {
+                val startIndex = characters.indexOfFirst { it.id > progress.lastCharacterId }
+                if (startIndex != -1) {
+                    Log.d("CharacterRepository", "Continuing from character ID: ${characters[startIndex].id}")
+                    characters.subList(startIndex, characters.size)
+                } else {
+                    Log.d("CharacterRepository", "No more characters in this level")
+                    emptyList()
+                }
+            } else {
+                Log.d("CharacterRepository", "Last character not fully learned, continuing from it")
+                val startIndex = characters.indexOfFirst { it.id >= progress.lastCharacterId }
+                if (startIndex != -1) {
+                    characters.subList(startIndex, characters.size)
+                } else {
+                    characters
+                }
+            }
+        } else {
+            Log.d("CharacterRepository", "Starting from beginning of level")
+            characters
+        }
+    }
+
+    suspend fun getCharactersForLevel(level: Int): List<CharacterData> {
         Log.d("CharacterRepository", "Getting characters for level: $level")
         // 获取用户的学习进度
         val progress = dao.getLearningProgressSync(currentUserId)
-        val lastLearnedId = progress?.lastCharacterId ?: 0
-        // 获取所有汉字
-        val allCharacters = dao.getAllCharacters()
-        if (allCharacters.isEmpty()) {
-            Log.d("CharacterRepository", "No characters found in database")
-            return emptyList()
+        val startId = if (progress != null) {
+            // 从上次学习的下一个字符开始
+            progress.lastCharacterId + 1
+        } else {
+            // 如果没有学习记录，从该级别的第一个字符开始
+            (level - 1) * 10 + 1
         }
 
-        // 计算当前级别的起始和结束索引
-        val charactersPerLevel = 10  // 每级10个汉字
-        val startIndex = (level - 1) * charactersPerLevel
+        val characters = dao.getCharactersForLevel(level, startId)
+        Log.d("CharacterRepository", "Found ${characters.size} characters for level $level, starting from ID: $startId")
 
-        // 如果起始索引超出了总汉字数，返回空列表
-        if (startIndex >= allCharacters.size) {
-            Log.d("CharacterRepository", "Level $level exceeds available characters")
-            return emptyList()
-        }
-
-        // 获取这一级别的汉字
-        val endIndex = minOf(startIndex + charactersPerLevel, allCharacters.size)
-        val characters = allCharacters.subList(startIndex, endIndex)
-        Log.d(
-            "CharacterRepository",
-            "Found ${characters.size} characters for level $level, starting from ID: ${characters.firstOrNull()?.id}"
-        )
         return characters
     }
 

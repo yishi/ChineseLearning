@@ -138,4 +138,11 @@ interface CharacterDao {
     """)
     suspend fun getAllReviewRecords(userId: Int): List<ReviewRecord>
 
+    @Query("""
+        SELECT * FROM characters 
+        WHERE id >= :startId AND id < :startId + 10 
+        AND level = :level
+        ORDER BY id ASC
+    """)
+    suspend fun getCharactersForLevel(level: Int, startId: Int): List<CharacterData>
 }
