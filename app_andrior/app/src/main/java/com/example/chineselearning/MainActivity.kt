@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.ui.text.style.TextOverflow
 
 @OptIn(ExperimentalMaterial3Api::class)  // 添加实验性 API 注解
+
 class MainActivity : ComponentActivity() {
     private lateinit var repository: CharacterRepository
 

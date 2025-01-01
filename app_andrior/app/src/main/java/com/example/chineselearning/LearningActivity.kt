@@ -7,6 +7,8 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,8 +24,7 @@ import com.example.chineselearning.data.CharacterData
 import com.example.chineselearning.data.CharacterRepository
 import kotlinx.coroutines.launch
 import java.util.Locale
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 class LearningActivity : ComponentActivity(), TextToSpeech.OnInitListener {
@@ -31,6 +32,7 @@ class LearningActivity : ComponentActivity(), TextToSpeech.OnInitListener {
     private lateinit var tts: TextToSpeech
     private var currentLevel = 1
     private var currentCharacters = listOf<CharacterData>()
+
     private var currentIndex by mutableStateOf(0)
     private var currentCharacter by mutableStateOf<CharacterData?>(null)
     private var userId: Int = -1
@@ -42,14 +44,17 @@ class LearningActivity : ComponentActivity(), TextToSpeech.OnInitListener {
         )
     }
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
 
         userId = intent.getIntExtra("userId", -1)
         if (userId == -1) {
             finish()
             return
         }
+
 
         val database = AppDatabase.getDatabase(applicationContext)
         repository = CharacterRepository(database.characterDao())
@@ -58,9 +63,9 @@ class LearningActivity : ComponentActivity(), TextToSpeech.OnInitListener {
         currentLevel = intent.getIntExtra("level", 1)
         tts = TextToSpeech(this, this)
 
+
         setContent {
             MaterialTheme {
-
                 LaunchedEffect(Unit) {
                     try {
                         loadCharacters()
@@ -176,6 +181,7 @@ class LearningActivity : ComponentActivity(), TextToSpeech.OnInitListener {
                             }
 
         // 下一个按钮
+
                             Button(
                                 onClick = {
                                     if (currentIndex + 1 < currentCharacters.size) {
@@ -214,6 +220,7 @@ class LearningActivity : ComponentActivity(), TextToSpeech.OnInitListener {
             val result = tts.setLanguage(Locale.CHINESE)
             if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                 Toast.makeText(this, "语音功能不可用", Toast.LENGTH_SHORT).show()
+
             }
         } else {
             Toast.makeText(this, "语音初始化失败", Toast.LENGTH_SHORT).show()

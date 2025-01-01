@@ -25,6 +25,7 @@ class StatisticsActivity : ComponentActivity() {
     private var currentUserId: Int = -1
 
     @OptIn(ExperimentalMaterial3Api::class)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

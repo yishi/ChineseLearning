@@ -31,6 +31,7 @@ class ReviewActivity : ComponentActivity(), TextToSpeech.OnInitListener {
     private var isReviewMode = false
     private var userId: Int = -1
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
