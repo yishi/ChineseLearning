@@ -139,10 +139,62 @@ interface CharacterDao {
     suspend fun getAllReviewRecords(userId: Int): List<ReviewRecord>
 
     @Query("""
-        SELECT * FROM characters 
-        WHERE id >= :startId AND id < :startId + 10 
-        AND level = :level
-        ORDER BY id ASC
+    SELECT c.*, 
+           CASE 
+               WHEN c.level = 1 THEN ((c.id - 1) / 10) + 1 
+               ELSE c.level 
+           END AS calculated_level 
+    FROM characters c
+    LEFT JOIN learning_records lr ON 
+        lr.character_id = c.id AND 
+        lr.user_id = :userId AND 
+        lr.is_learned = 1
+    WHERE lr.id IS NULL
+    AND CASE 
+        WHEN c.level = 1 THEN ((c.id - 1) / 10) + 1 
+        ELSE c.level 
+    END >= :level
+    ORDER BY calculated_level ASC, c.id ASC
+    LIMIT 10
+""")
+    suspend fun getCharactersForLevel(level: Int, userId: Int): List<CharacterData>
+
+    @Query("""
+        SELECT c.* FROM characters c 
+        WHERE c.id NOT IN (
+            SELECT lr.character_id 
+            FROM learning_records lr 
+            WHERE lr.user_id = :userId AND lr.is_learned = 1
+        )
+        ORDER BY c.level ASC, c.id ASC 
+        LIMIT :count
     """)
-    suspend fun getCharactersForLevel(level: Int, startId: Int): List<CharacterData>
+    suspend fun getUnlearnedCharacters(userId: Int, count: Int): List<CharacterData>
+
+    @Query("SELECT character_id FROM learning_records WHERE user_id = :userId AND is_learned = 1")
+    suspend fun getLearnedCharacterIds(userId: Int): List<Int>
+
+    @Query("""
+    SELECT c.* FROM characters c
+    LEFT JOIN learning_records lr ON 
+        lr.character_id = c.id AND 
+        lr.user_id = :userId AND 
+        lr.is_learned = 1
+    WHERE lr.id IS NULL
+    AND c.id > (
+        SELECT COALESCE(MAX(character_id), 0) 
+        FROM learning_records 
+        WHERE user_id = :userId AND is_learned = 1
+    )
+    ORDER BY c.id ASC
+    LIMIT :count
+""")
+    suspend fun getNextCharacters(userId: Int, count: Int = 10): List<CharacterData>
+
+    @Query("""
+        SELECT COALESCE(MAX(character_id), 0)
+        FROM learning_records
+        WHERE user_id = :userId AND is_learned = 1
+    """)
+    suspend fun getLastLearnedCharacterId(userId: Int): Int
 }

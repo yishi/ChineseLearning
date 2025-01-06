@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.example.chineselearning.data.AppDatabase
 import com.example.chineselearning.data.CharacterRepository
+import com.example.chineselearning.utils.DatabaseManager
 import kotlinx.coroutines.launch
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExitToApp
@@ -27,6 +28,7 @@ import androidx.compose.ui.text.style.TextOverflow
 
 class MainActivity : ComponentActivity() {
     private lateinit var repository: CharacterRepository
+    private lateinit var dbManager: DatabaseManager
 
     companion object {
         const val PREF_NAME = "ChineseLearningPrefs"
@@ -35,6 +37,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        dbManager = DatabaseManager(this)
 
         val userId = intent.getIntExtra("userId", -1)
         if (userId == -1) {
@@ -132,6 +135,12 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // 在应用退出时备份数据库
+        dbManager.backupDatabase()
     }
 }
 

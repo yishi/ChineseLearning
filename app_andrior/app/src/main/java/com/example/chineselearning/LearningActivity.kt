@@ -22,9 +22,11 @@ import androidx.lifecycle.lifecycleScope
 import com.example.chineselearning.data.AppDatabase
 import com.example.chineselearning.data.CharacterData
 import com.example.chineselearning.data.CharacterRepository
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Locale
-
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 class LearningActivity : ComponentActivity(), TextToSpeech.OnInitListener {
@@ -32,7 +34,6 @@ class LearningActivity : ComponentActivity(), TextToSpeech.OnInitListener {
     private lateinit var tts: TextToSpeech
     private var currentLevel = 1
     private var currentCharacters = listOf<CharacterData>()
-
     private var currentIndex by mutableStateOf(0)
     private var currentCharacter by mutableStateOf<CharacterData?>(null)
     private var userId: Int = -1
@@ -235,36 +236,33 @@ class LearningActivity : ComponentActivity(), TextToSpeech.OnInitListener {
     private fun loadCharacters() {
         lifecycleScope.launch {
             try {
-                currentCharacters = repository.getCharactersByLevel(currentLevel)
-                currentIndex = 0
+                Log.d("LearningActivity", "Loading characters...")
+                currentCharacters = repository.getNextCharactersToLearn()
+                Log.d("LearningActivity", "Loaded ${currentCharacters.size} characters")
+
             if (currentCharacters.isNotEmpty()) {
+                currentIndex = 0
                 currentCharacter = currentCharacters[currentIndex]
-                repository.markCharacterAsLearned(currentCharacter!!.id)
+                withContext(Dispatchers.Main) {
+                    delay(300)
+                    currentCharacter?.let { character ->
+                        repository.markCharacterAsLearned(character.id)
+                    }
+                }
             } else {
-                // 当前级别学习完成，加载下一级
-                lifecycleScope.launch {
-                    val nextLevel = currentLevel + 1
-                    val nextLevelCharacters = repository.getCharactersByLevel(nextLevel)
-                    if (nextLevelCharacters.isNotEmpty()) {
-                        currentLevel = nextLevel
-                        currentCharacters = nextLevelCharacters
-                        currentIndex = 0
-                        currentCharacter = currentCharacters[0]
-                        repository.markCharacterAsLearned(currentCharacter!!.id)
-                    } else {
                         Toast.makeText(
                             this@LearningActivity,
-                            "已完成所有汉字学习",
+                            "当前没有新的汉字可以学习",
                             Toast.LENGTH_SHORT
                         ).show()
                         finish()
                     }
-                }
-            }
             } catch (e: Exception) {
                 Log.e("LearningActivity", "Error loading characters", e)
                 Toast.makeText(this@LearningActivity, "加载汉字时出错", Toast.LENGTH_SHORT).show()
             }
         }
     }
+
+
 }

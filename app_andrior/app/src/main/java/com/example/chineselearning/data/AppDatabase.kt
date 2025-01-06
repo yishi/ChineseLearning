@@ -16,7 +16,7 @@ import android.content.Context
         ReviewRecord::class,
         User::class
     ],
-    version = 10
+    version = 12
 )
 
 abstract class AppDatabase : RoomDatabase() {
@@ -27,6 +27,24 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
+        private val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // 添加 calculated_level 列
+                database.execSQL("""
+                    ALTER TABLE characters ADD COLUMN calculated_level INTEGER NOT NULL DEFAULT 1
+                """)
+
+                // 更新 calculated_level 值
+                database.execSQL("""
+                    UPDATE characters 
+                    SET calculated_level = CASE 
+                        WHEN level = 1 THEN ((id - 1) / 10) + 1 
+                        ELSE level 
+                    END
+                """)
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -34,7 +52,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "app_database"
                 )
-                    .addMigrations(MIGRATION_9_10)
+                    .addMigrations(MIGRATION_11_12)
                     .fallbackToDestructiveMigration()
                 .build()
                 INSTANCE = instance
@@ -42,72 +60,5 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
-        private val MIGRATION_9_10 = object : Migration(9, 10) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("CREATE TABLE IF NOT EXISTS users_backup (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, username TEXT NOT NULL, password_hash TEXT NOT NULL, createdAt INTEGER NOT NULL DEFAULT 0)")
-                database.execSQL("INSERT INTO users_backup SELECT * FROM users")
-
-                database.execSQL("DROP TABLE IF EXISTS users")
-                database.execSQL("DROP TABLE IF EXISTS learning_progress")
-                database.execSQL("DROP TABLE IF EXISTS learning_records")
-                database.execSQL("DROP TABLE IF EXISTS review_records")
-                database.execSQL("DROP TABLE IF EXISTS characters")
-
-                database.execSQL("""
-                    CREATE TABLE IF NOT EXISTS users (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        username TEXT NOT NULL,
-                        password_hash TEXT NOT NULL,
-                        createdAt INTEGER NOT NULL DEFAULT 0
-                    )
-                """)
-
-                database.execSQL("""
-                    CREATE TABLE IF NOT EXISTS learning_progress (
-                        userId INTEGER PRIMARY KEY NOT NULL,
-                        lastCharacterId INTEGER NOT NULL,
-                        lastUpdateTime INTEGER NOT NULL,
-                        currentLevel INTEGER NOT NULL DEFAULT 1
-                    )
-                """)
-
-                database.execSQL("""
-                    CREATE TABLE IF NOT EXISTS learning_records (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        character_id INTEGER NOT NULL,
-                        user_id INTEGER NOT NULL,
-                        learned_time INTEGER NOT NULL,
-                        is_learned INTEGER NOT NULL
-                    )
-                """)
-
-                database.execSQL("""
-                    CREATE TABLE IF NOT EXISTS review_records (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        characterId INTEGER NOT NULL,
-                        userId INTEGER NOT NULL,
-                        reviewCount INTEGER NOT NULL DEFAULT 0,
-                        lastReviewTime INTEGER NOT NULL,
-                        nextReviewTime INTEGER NOT NULL,
-                        masteryLevel INTEGER NOT NULL DEFAULT 0
-                    )
-                """)
-
-                database.execSQL("""
-                    CREATE TABLE IF NOT EXISTS characters (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                        character TEXT NOT NULL,
-                        pinyin TEXT NOT NULL,
-                        meaning TEXT NOT NULL,
-                        strokes INTEGER NOT NULL,
-                        examples TEXT NOT NULL,
-                        level INTEGER NOT NULL DEFAULT 1
-                    )
-                """)
-
-                database.execSQL("INSERT INTO users SELECT * FROM users_backup")
-                database.execSQL("DROP TABLE IF EXISTS users_backup")
-            }
-        }
     }
 }

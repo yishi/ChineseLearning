@@ -27,6 +27,9 @@ data class CharacterData(
     @ColumnInfo(name = "level")
     val level: Int = 1,  // 添加 level 字段，默认为 1
 
+    @ColumnInfo(name = "calculated_level")
+    val calculatedLevel: Int = ((id - 1) / 10) + 1,
+
     @ColumnInfo(name = "last_review_time")
     var lastReviewTime: Long = 0L,
 
@@ -44,4 +47,6 @@ data class CharacterData(
 
     @ColumnInfo(name = "learned_time")
     var learnedTime: Long? = null    // 首次学习时间
+
+
 )

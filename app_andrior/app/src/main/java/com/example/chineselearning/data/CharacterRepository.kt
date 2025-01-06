@@ -274,9 +274,23 @@ class CharacterRepository(private val dao: CharacterDao) {
         }
     }
 
+
     data class UserData(
         val learningProgress: LearningProgress?,
         val learnedCharacters: List<CharacterData>,
         val reviewRecords: List<ReviewRecord>
     )
+
+    suspend fun getNextCharactersToLearn(): List<CharacterData> {
+        Log.d("CharacterRepository", "Getting next characters for user: $currentUserId")
+
+        // 获取最后学习的字的ID
+        val lastLearnedId = dao.getLastLearnedCharacterId(currentUserId)
+        Log.d("CharacterRepository", "Last learned character ID: $lastLearnedId")
+
+        val characters = dao.getNextCharacters(currentUserId)
+        Log.d("CharacterRepository", "Found ${characters.size} new characters to learn, starting from ID: ${characters.firstOrNull()?.id}")
+
+        return characters
+    }
 }

@@ -17,14 +17,32 @@ import androidx.lifecycle.lifecycleScope
 import com.example.chineselearning.data.AppDatabase
 import com.example.chineselearning.data.User
 import com.example.chineselearning.data.UserDao
+import com.example.chineselearning.utils.DatabaseManager
 import kotlinx.coroutines.launch
 import java.security.MessageDigest
+import android.content.pm.PackageManager
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import android.Manifest
+import android.os.Build
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
 
 class LoginActivity : ComponentActivity() {
     private lateinit var userDao: UserDao
+    private lateinit var dbManager: DatabaseManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        dbManager = DatabaseManager(this)   // 初始化 dbManager
+        // 检查并请求权限
+        checkAndRequestPermissions()
+        // 尝试恢复数据库
+        if (dbManager.restoreDatabase()) {
+            Log.d("LoginActivity", "数据库恢复成功")
+        }
 
         val database = AppDatabase.getDatabase(applicationContext)
         userDao = database.userDao()
@@ -44,6 +62,42 @@ class LoginActivity : ComponentActivity() {
                     }
                     )
                 }
+            }
+        }
+    }
+
+    private fun checkAndRequestPermissions() {
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+            val permissions = arrayOf(
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.READ_EXTERNAL_STORAGE
+            )
+
+            val permissionsToRequest = permissions.filter {
+                ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+            }.toTypedArray()
+
+            if (permissionsToRequest.isNotEmpty()) {
+                ActivityCompat.requestPermissions(this, permissionsToRequest, 1001)
+            }
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 1001) {
+            if (grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
+                // 权限获取成功，尝试恢复数据库
+                if (dbManager.restoreDatabase()) {
+                    Log.d("LoginActivity", "数据库恢复成功")
+                }
+            } else {
+                // 权限被拒绝，显示提示
+                Toast.makeText(this, "需要存储权限以保存学习进度", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -68,6 +122,10 @@ class LoginActivity : ComponentActivity() {
 
                 if (user.passwordHash == passwordHash) {
                     Log.d("LoginActivity", "登录成功，用户ID: ${user.id}")
+                    withContext(Dispatchers.Main) {
+                        // 在主线程中执行数据库备份
+                        dbManager.backupDatabase()
+                    }
                     val intent = Intent(this@LoginActivity, MainActivity::class.java)
                     intent.putExtra("userId", user.id)
                     startActivity(intent)
@@ -126,6 +184,8 @@ class LoginActivity : ComponentActivity() {
         return digest.fold("") { str, it -> str + "%02x".format(it) }
     }
 }
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -3,7 +3,14 @@
     package="com.example.chineselearning"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- 添加外部存储权限 -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28"/>
+
     <application
+        android:name=".ChineseLearningApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
