@@ -25,14 +25,13 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import android.Manifest
 import android.os.Build
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import android.view.View
+import com.example.chineselearning.utils.LanguageManager
 
 class LoginActivity : ComponentActivity() {
     private lateinit var userDao: UserDao
@@ -252,90 +251,136 @@ fun LoginScreen(
     onRegister: (String, String) -> Unit,
     onAutoEnter: () -> Unit
 ) {
+    // 使用 remember 记住状态
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isRegistering by remember { mutableStateOf(false) }
+    // 获取 LanguageManager 实例
+    val languageManager = LanguageManager.getInstance()
+    // 观察语言状态变化
+    val isEnglish by languageManager.isEnglish
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-
-        Text(
-            text = "欢迎使用汉字学习",
-            style = MaterialTheme.typography.headlineMedium
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        OutlinedTextField(
-            value = username,
-            onValueChange = { username = it },
-            label = { Text("用户名") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            visualTransformation = VisualTransformation.None
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("密码") },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Button(
+    Box(modifier = Modifier.fillMaxSize()) {
+        // 语言切换按钮
+        IconButton(
             onClick = {
-                // 处理登录逻辑
-                if (isRegistering) {
-                    onRegister(username, password)
-                } else {
-                    onLogin(username, password)
-                }
+                languageManager.toggleLanguage()
             },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(if (isRegistering) "注册" else "登录")
-        }
-
-        TextButton(
-            onClick = { isRegistering = !isRegistering }
-        ) {
-            Text(if (isRegistering) "已有账号？点击登录" else "没有账号？点击注册")
-        }
-
-        // 在切换按钮下方添加适当间距后显示说明文字
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = "注册/登录仅用于保存您的学习进度和复习计划\n我们不会收集任何其他个人信息",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 32.dp),
-            lineHeight = 20.sp
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        OutlinedButton(
-            onClick = onAutoEnter,
-            modifier = Modifier
-                .fillMaxWidth(0.7f)
+                .align(Alignment.TopEnd)
+                .padding(16.dp)
         ) {
-            Text("直接进入")
+            Text(
+                text = if (isEnglish) "中" else "EN",
+                style = MaterialTheme.typography.bodyLarge
+            )
         }
 
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            // 欢迎文本
+            Text(
+                // text = "欢迎使用汉字学习",
+                text = languageManager.getText("welcome"),
+                style = MaterialTheme.typography.headlineMedium
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // 用户名输入框
+            OutlinedTextField(
+                value = username,
+                onValueChange = { username = it },
+                //  label = { Text("用户名") },
+                label = { Text(languageManager.getText("username")) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                visualTransformation = VisualTransformation.None
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 密码输入框
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                // label = { Text("密码") },
+                label = { Text(languageManager.getText("password")) },
+                visualTransformation = PasswordVisualTransformation(),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // 登录/注册按钮
+            Button(
+                onClick = {
+                    // 处理登录逻辑
+                    if (isRegistering) {
+                        onRegister(username, password)
+                    } else {
+                        onLogin(username, password)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // 使用专门的按钮文本键
+                Text(
+                    if (isRegistering)
+                        languageManager.getText("register_button")
+                    else languageManager.getText("login_button")
+                )
+            }
+
+            // 切换登录/注册文本按钮
+            TextButton(
+                onClick = { isRegistering = !isRegistering }
+            ) {
+                Text(
+                    if (isRegistering)
+                        languageManager.getText("login")
+                    else languageManager.getText("register"),
+                    color = MaterialTheme.colorScheme.primary,  // 使用主题色（通常是蓝色）
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+
+
+            // 在切换按钮下方添加适当间距后显示说明文字
+            Spacer(modifier = Modifier.height(16.dp))
+            // 提示文本
+            Text(
+                // text = "注册/登录仅用于保存您的学习进度和复习计划\n我们不会收集任何其他个人信息",
+                text = languageManager.getText("login_hint"),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp),
+                lineHeight = 20.sp
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // 直接进入按钮
+            OutlinedButton(
+                onClick = onAutoEnter,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(languageManager.getText("auto_enter"))
+            }
+
+        }
     }
 }
+
+
+
 
