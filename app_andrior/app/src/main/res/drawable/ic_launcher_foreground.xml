@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 水墨背景效果 -->
+    <path
+        android:fillColor="#FFE8E8E8"
+        android:pathData="M54,28
+                         Q82,28 82,54
+                         Q82,80 54,80
+                         Q26,80 26,54
+                         Q26,28 54,28"
+        android:fillAlpha="0.7"/>
+
+    <!-- 内层晕染 -->
+    <path
+        android:fillColor="#B71C1C"
+        android:pathData="M54,30
+                         Q78,30 78,54
+                         Q78,78 54,78
+                         Q30,78 30,54
+                         Q30,30 54,30"
+        android:fillAlpha="0.1"/>
+
+    <!-- "中"字外框 - 上横，窄一些 -->
+    <path
+        android:fillColor="#B71C1C"
+        android:pathData="M38,42
+                         Q54,41.5 70,42
+                         L70,45
+                         Q54,44.5 38,45 Z"
+        android:fillAlpha="0.95"/>
+
+    <!-- "中"字外框 - 左竖，细一些 -->
+    <path
+        android:fillColor="#B71C1C"
+        android:pathData="M38,42
+                         L41,42
+                         L41,62
+                         L38,62 Z"
+        android:fillAlpha="0.95"/>
+
+    <!-- "中"字外框 - 右竖，细一些 -->
+    <path
+        android:fillColor="#B71C1C"
+        android:pathData="M67,42
+                         L70,42
+                         L70,62
+                         L67,62 Z"
+        android:fillAlpha="0.95"/>
+
+    <!-- "中"字外框 - 下横，窄一些 -->
+    <path
+        android:fillColor="#B71C1C"
+        android:pathData="M38,59
+                         Q54,58.5 70,59
+                         L70,62
+                         Q54,61.5 38,62 Z"
+        android:fillAlpha="0.95"/>
+
+    <!-- "中"字中间的竖，适中粗细且上下出头更多 -->
+    <path
+        android:fillColor="#B71C1C"
+        android:pathData="M52,30
+                         L56,30
+                         L56,78
+                         L52,78 Z"
+        android:fillAlpha="0.95"/>
+
+    <!-- 印章边框 - 内圈 -->
+    <path
+        android:strokeColor="#B71C1C"
+        android:strokeWidth="0.8"
+        android:strokeAlpha="0.4"
+        android:pathData="M54,31
+                         A23,23 0 1,1 54,77
+                         A23,23 0 1,1 54,31"
+        android:strokeLineCap="round"/>
+
+    <!-- 印章边框 - 外圈 -->
+    <path
+        android:strokeColor="#B71C1C"
+        android:strokeWidth="1.2"
+        android:strokeAlpha="0.6"
+        android:pathData="M54,29
+                         Q80,29 80,54
+                         Q80,79 54,79
+                         Q28,79 28,54
+                         Q28,29 54,29"
+        android:strokeLineCap="round"/>
+</vector>

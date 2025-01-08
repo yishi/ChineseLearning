@@ -25,16 +25,29 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import android.Manifest
 import android.os.Build
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.VisualTransformation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
+import android.view.View
 
 class LoginActivity : ComponentActivity() {
     private lateinit var userDao: UserDao
     private lateinit var dbManager: DatabaseManager
 
+    companion object {
+        private const val TAG = "LoginActivity"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            window.decorView.importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS
+        }
 
         dbManager = DatabaseManager(this)   // 初始化 dbManager
         // 检查并请求权限
@@ -54,12 +67,15 @@ class LoginActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     LoginScreen(
-                    onLogin = { username, password ->
-                        handleLogin(username, password)
-                    },
-                    onRegister = { username, password ->
-                        handleRegister(username, password)
-                    }
+                        onLogin = { username, password ->
+                            handleLogin(username, password)
+                        },
+                        onRegister = { username, password ->
+                            handleRegister(username, password)
+                        },
+                        onAutoEnter = {
+                            handleAutoRegister()
+                        }
                     )
                 }
             }
@@ -113,10 +129,11 @@ class LoginActivity : ComponentActivity() {
                 Log.d("LoginActivity", "正在查询用户: $username")
                 val user = userDao.getUserByUsername(username)
                     ?: run {
-                    Log.d("LoginActivity", "用户不存在: $username")
-                    Toast.makeText(this@LoginActivity, "用户名或密码错误", Toast.LENGTH_SHORT).show()
-                    return@launch
-                }
+                        Log.d("LoginActivity", "用户不存在: $username")
+                        Toast.makeText(this@LoginActivity, "用户名或密码错误", Toast.LENGTH_SHORT)
+                            .show()
+                        return@launch
+                    }
                 val passwordHash = hashPassword(password)
                 Log.d("LoginActivity", "验证密码哈希值...")
 
@@ -132,11 +149,13 @@ class LoginActivity : ComponentActivity() {
                     finish()
                 } else {
                     Log.d("LoginActivity", "密码错误")
-                    Toast.makeText(this@LoginActivity, "用户名或密码错误", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@LoginActivity, "用户名或密码错误", Toast.LENGTH_SHORT)
+                        .show()
                 }
             } catch (e: Exception) {
                 Log.e("LoginActivity", "登录失败", e)
-                Toast.makeText(this@LoginActivity, "登录失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@LoginActivity, "登录失败: ${e.message}", Toast.LENGTH_SHORT)
+                    .show()
             }
         }
     }
@@ -172,7 +191,8 @@ class LoginActivity : ComponentActivity() {
                 startActivity(intent)
                 finish()
             } catch (e: Exception) {
-                Toast.makeText(this@LoginActivity, "注册失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@LoginActivity, "注册失败: ${e.message}", Toast.LENGTH_SHORT)
+                    .show()
             }
         }
     }
@@ -183,6 +203,44 @@ class LoginActivity : ComponentActivity() {
         val digest = md.digest(bytes)
         return digest.fold("") { str, it -> str + "%02x".format(it) }
     }
+
+    private fun handleAutoRegister() {
+        lifecycleScope.launch {
+            try {
+                // 生成随机用户名和密码
+                // 1. 生成随机用户名：使用时间戳确保唯一性
+                val randomUsername = "user_${System.currentTimeMillis()}"
+                // 2. 生成6位随机密码
+                val randomPassword = "pass_${(100000..999999).random()}"
+                // 3. 对密码进行SHA-256哈希处理
+                val passwordHash = hashPassword(randomPassword)
+
+                // 4. 创建新用户并插入数据库
+                val userId = userDao.insertUser(
+                    User(
+                        username = randomUsername,
+                        passwordHash = passwordHash
+                    )
+                )
+                // 5. 记录日志
+                Log.d(TAG, "自动创建用户成功: $randomUsername")
+                // 6. 直接进入主页，传递用户ID
+                val intent = Intent(this@LoginActivity, MainActivity::class.java)
+                intent.putExtra("userId", userId.toInt())
+                startActivity(intent)
+                finish()
+            } catch (e: Exception) {
+                // 7. 错误处理
+                Log.e(TAG, "自动注册失败", e)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@LoginActivity, "创建临时账号失败", Toast.LENGTH_SHORT)
+                        .show()
+                }
+
+            }
+
+        }
+    }
 }
 
 
@@ -191,11 +249,13 @@ class LoginActivity : ComponentActivity() {
 @Composable
 fun LoginScreen(
     onLogin: (String, String) -> Unit,
-    onRegister: (String, String) -> Unit
+    onRegister: (String, String) -> Unit,
+    onAutoEnter: () -> Unit
 ) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isRegistering by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -203,20 +263,25 @@ fun LoginScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+
         Text(
             text = "欢迎使用汉字学习",
             style = MaterialTheme.typography.headlineMedium
         )
+
         Spacer(modifier = Modifier.height(32.dp))
+
         OutlinedTextField(
             value = username,
             onValueChange = { username = it },
             label = { Text("用户名") },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = VisualTransformation.None
         )
 
         Spacer(modifier = Modifier.height(16.dp))
+
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
@@ -246,6 +311,31 @@ fun LoginScreen(
         ) {
             Text(if (isRegistering) "已有账号？点击登录" else "没有账号？点击注册")
         }
+
+        // 在切换按钮下方添加适当间距后显示说明文字
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "注册/登录仅用于保存您的学习进度和复习计划\n我们不会收集任何其他个人信息",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 32.dp),
+            lineHeight = 20.sp
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        OutlinedButton(
+            onClick = onAutoEnter,
+            modifier = Modifier
+                .fillMaxWidth(0.7f)
+        ) {
+            Text("直接进入")
+        }
+
     }
 }
 
