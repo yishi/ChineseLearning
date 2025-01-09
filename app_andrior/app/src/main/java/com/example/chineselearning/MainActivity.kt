@@ -22,13 +22,20 @@ import com.example.chineselearning.utils.DatabaseManager
 import kotlinx.coroutines.launch
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
+import com.example.chineselearning.utils.LanguageManager
+
 
 @OptIn(ExperimentalMaterial3Api::class)  // 添加实验性 API 注解
 
 class MainActivity : ComponentActivity() {
     private lateinit var repository: CharacterRepository
     private lateinit var dbManager: DatabaseManager
+    // 获取 LanguageManager 实例，复用已有的语言管理器
+    private val languageManager = LanguageManager.getInstance()
 
     companion object {
         const val PREF_NAME = "ChineseLearningPrefs"
@@ -96,7 +103,8 @@ class MainActivity : ComponentActivity() {
                                         } else {
                                             Toast.makeText(
                                                 this@MainActivity,
-                                                "暂无需要复习的汉字",
+                                              //  "暂无需要复习的汉字",
+                                                languageManager.getText("no_review_chars"),
                                                 Toast.LENGTH_SHORT
                                             ).show()
                                         }
@@ -104,7 +112,8 @@ class MainActivity : ComponentActivity() {
                                         Log.e("MainActivity", "Error starting review", e)
                                         Toast.makeText(
                                             this@MainActivity,
-                                            "启动复习时出错",
+                                         //   "启动复习时出错",
+                                            languageManager.getText("review_error"),
                                             Toast.LENGTH_SHORT
                                         ).show()
                                     }
@@ -152,15 +161,33 @@ fun MainScreenWithTopBar(
     onShowStatistics: () -> Unit,
     onLogout: () -> Unit
 ) {
+    // 获取 LanguageManager 实例，复用已有的语言管理器
+    val languageManager = LanguageManager.getInstance()
+    // 观察语言状态变化，确保UI实时更新
+    val isEnglish by languageManager.isEnglish
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("汉字学习") },
+             //   title = { Text("汉字学习") },
+                // 使用 getText 获取对应语言的标题
+                title = { Text(languageManager.getText("app_title")) },
                 actions = {
+                    // 添加语言切换按钮
+                    IconButton(
+                        onClick = { languageManager.toggleLanguage() }
+                    ) {
+                        Text(
+                            text = if(isEnglish) "中" else "EN",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                    // 保持原有的退出按钮
                     IconButton(onClick = onLogout) {
                         Icon(
                             imageVector = Icons.Default.ExitToApp,
-                            contentDescription = "退出登录"
+                            // 使用 getText 获取对应语言的退出提示
+                            contentDescription = languageManager.getText("logout")
                         )
                     }
                 }
@@ -176,11 +203,16 @@ fun MainScreenWithTopBar(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "汉字学习",
-            style = MaterialTheme.typography.displayMedium,
+           // text = "汉字学习",
+            languageManager.getText("main_title"),
+            style = MaterialTheme.typography.displayMedium.copy(
+                fontSize = 35.sp  // 稍微缩小字体
+            ),
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(bottom = 48.dp)
+            maxLines = 1,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(bottom = 48.dp).fillMaxWidth()
         )
 
         // 统一三个按钮的样式
@@ -199,7 +231,7 @@ fun MainScreenWithTopBar(
             )
         ) {
             Text(
-                text = "开始学习",
+                languageManager.getText("start_learning"),
                 style = MaterialTheme.typography.titleLarge,
                 maxLines = 1,
                 overflow = TextOverflow.Visible
@@ -216,7 +248,7 @@ fun MainScreenWithTopBar(
             )
         ) {
             Text(
-                text = "开始复习",
+                languageManager.getText("start_review"),
                 style = MaterialTheme.typography.titleLarge,
                 maxLines = 1,
                 overflow = TextOverflow.Visible
@@ -233,7 +265,8 @@ fun MainScreenWithTopBar(
             )
         ) {
         Text(
-            text = "学习统计",
+            //text = "学习统计",
+            languageManager.getText("statistics"),
             style = MaterialTheme.typography.titleLarge,
             maxLines = 1,
             overflow = TextOverflow.Visible

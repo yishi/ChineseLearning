@@ -27,6 +27,7 @@ import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.example.chineselearning.utils.LanguageManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 class LearningActivity : ComponentActivity(), TextToSpeech.OnInitListener {
@@ -37,6 +38,7 @@ class LearningActivity : ComponentActivity(), TextToSpeech.OnInitListener {
     private var currentIndex by mutableStateOf(0)
     private var currentCharacter by mutableStateOf<CharacterData?>(null)
     private var userId: Int = -1
+    private val languageManager = LanguageManager.getInstance()
 
     // 修改字体声明方式
     private val kaitiFont by lazy {
@@ -45,17 +47,14 @@ class LearningActivity : ComponentActivity(), TextToSpeech.OnInitListener {
         )
     }
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
 
         userId = intent.getIntExtra("userId", -1)
         if (userId == -1) {
             finish()
             return
         }
-
 
         val database = AppDatabase.getDatabase(applicationContext)
         repository = CharacterRepository(database.characterDao())
@@ -64,7 +63,6 @@ class LearningActivity : ComponentActivity(), TextToSpeech.OnInitListener {
         currentLevel = intent.getIntExtra("level", 1)
         tts = TextToSpeech(this, this)
 
-
         setContent {
             MaterialTheme {
                 LaunchedEffect(Unit) {
@@ -72,19 +70,20 @@ class LearningActivity : ComponentActivity(), TextToSpeech.OnInitListener {
                         loadCharacters()
                     } catch (e: Exception) {
                         Log.e("LearningActivity", "Error loading characters", e)
-                        Toast.makeText(this@LearningActivity, "加载汉字时出错", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@LearningActivity, languageManager.getText("load_chars_error"), Toast.LENGTH_SHORT).show()
                     }
                 }
 
                 Scaffold(
                     topBar = {
                         TopAppBar(
-                            title = { Text("学习 - 第${currentLevel}级") },
+                            title = { Text(languageManager.getText("learning_title")) },
                             navigationIcon = {
                                 IconButton(onClick = { finish() }) {
                                     Icon(
                                         imageVector = Icons.Default.ArrowBack,
-                                        contentDescription = "返回"
+                                     //   contentDescription = "返回"
+                                        contentDescription = languageManager.getText("back")
                                     )
                                 }
                             },
@@ -154,7 +153,8 @@ class LearningActivity : ComponentActivity(), TextToSpeech.OnInitListener {
                                             .padding(vertical = 8.dp)
                                             .align(Alignment.CenterHorizontally) // 确保按钮居中
                                     ) {
-                                        Text("朗读")
+                                        //Text("朗读")
+                                        Text(languageManager.getText("speak"))
                                     }
                                 }
                             }
@@ -178,7 +178,8 @@ class LearningActivity : ComponentActivity(), TextToSpeech.OnInitListener {
                                 enabled = currentIndex > 0,
                                 modifier = Modifier.weight(1f).padding(end = 8.dp)
                             ) {
-                                Text("上一个")
+                              //  Text("上一个")
+                                Text(languageManager.getText("previous"))
                             }
 
         // 下一个按钮
@@ -192,13 +193,14 @@ class LearningActivity : ComponentActivity(), TextToSpeech.OnInitListener {
                                             repository.markCharacterAsLearned(currentCharacter!!.id)
                                         }
                                     } else {
-                                        Toast.makeText(this@LearningActivity, "本级别学习完成", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(this@LearningActivity, languageManager.getText("level_completed"), Toast.LENGTH_SHORT).show()
                                         finish()
                                     }
                                 },
                                 modifier = Modifier.weight(1f).padding(start = 8.dp)
                             ) {
-                                Text("下一个")
+                                //Text("下一个")
+                                Text(languageManager.getText("next"))
                             }
                         }
                     }
@@ -220,11 +222,11 @@ class LearningActivity : ComponentActivity(), TextToSpeech.OnInitListener {
         if (status == TextToSpeech.SUCCESS) {
             val result = tts.setLanguage(Locale.CHINESE)
             if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                Toast.makeText(this, "语音功能不可用", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, languageManager.getText("tts_unavailable"), Toast.LENGTH_SHORT).show()
 
             }
         } else {
-            Toast.makeText(this, "语音初始化失败", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, languageManager.getText("tts_init_failed"), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -252,14 +254,17 @@ class LearningActivity : ComponentActivity(), TextToSpeech.OnInitListener {
             } else {
                         Toast.makeText(
                             this@LearningActivity,
-                            "当前没有新的汉字可以学习",
+                            languageManager.getText("no_new_chars"),
                             Toast.LENGTH_SHORT
                         ).show()
                         finish()
                     }
             } catch (e: Exception) {
                 Log.e("LearningActivity", "Error loading characters", e)
-                Toast.makeText(this@LearningActivity, "加载汉字时出错", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this@LearningActivity,
+                    languageManager.getText("load_chars_error"),
+                    Toast.LENGTH_SHORT).show()
             }
         }
     }
