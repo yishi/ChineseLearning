@@ -42,7 +42,7 @@ class LanguageManager private constructor() {
             "welcome" -> if(isEnglish.value) "Welcome to Chinese Learning" else "欢迎使用汉字学习"
             "auto_enter" -> if(isEnglish.value) "Quick Start" else "直接进入"
             "login_hint" -> if(isEnglish.value)
-            "Login/Register is only used to save your learning progress\nWe won't collect any other personal information"
+                "Login/Register is only used to save your learning progress\nWe won't collect any other personal information"
             else
                 "注册/登录仅用于保存您的学习进度和复习计划\n我们不会收集任何其他个人信息"
             // 登录页面的错误提示文本
@@ -62,8 +62,8 @@ class LanguageManager private constructor() {
             "no_review_chars" -> if(isEnglish.value) "No characters need to be reviewed" else "暂无需要复习的汉字"
             "review_error" -> if(isEnglish.value) "Error starting review" else "启动复习时出错"
             "backup_success" -> if(isEnglish.value) "Database backup successful" else "数据库备份成功"
-         //   "backup_failed" -> if(isEnglish.value) "Database backup failed" else "数据库备份失败"
-         //   "backup_error" -> if(isEnglish.value) "Error during backup" else "备份过程出错"
+            //   "backup_failed" -> if(isEnglish.value) "Database backup failed" else "数据库备份失败"
+            //   "backup_error" -> if(isEnglish.value) "Error during backup" else "备份过程出错"
             // 学习页面相关文本
             "learning_title" -> if(isEnglish.value) "Learning" else "学习"  // TopAppBar 标题
             "speak" -> if(isEnglish.value) "Speak" else "朗读"

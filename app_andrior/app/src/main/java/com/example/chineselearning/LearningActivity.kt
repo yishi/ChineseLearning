@@ -187,6 +187,7 @@ class LearningActivity : ComponentActivity(), TextToSpeech.OnInitListener {
                             Button(
                                 onClick = {
                                     if (currentIndex + 1 < currentCharacters.size) {
+                                        // 切换到下一个字
                                         currentIndex++
                                         currentCharacter = currentCharacters[currentIndex]
                                         lifecycleScope.launch {
@@ -235,6 +236,7 @@ class LearningActivity : ComponentActivity(), TextToSpeech.OnInitListener {
             tts.shutdown()
         super.onDestroy()
     }
+
     private fun loadCharacters() {
         lifecycleScope.launch {
             try {
@@ -245,6 +247,7 @@ class LearningActivity : ComponentActivity(), TextToSpeech.OnInitListener {
             if (currentCharacters.isNotEmpty()) {
                 currentIndex = 0
                 currentCharacter = currentCharacters[currentIndex]
+                // 移除这里的 markCharacterAsLearned 调用
                 withContext(Dispatchers.Main) {
                     delay(300)
                     currentCharacter?.let { character ->

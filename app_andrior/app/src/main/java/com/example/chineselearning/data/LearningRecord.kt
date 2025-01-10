@@ -8,6 +8,7 @@ import androidx.room.ColumnInfo
 data class LearningRecord(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
+
     @ColumnInfo(name = "character_id")
     val characterId: Int,
 

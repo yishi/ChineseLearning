@@ -93,6 +93,7 @@ class MainActivity : ComponentActivity() {
                                     try {
                                         // 使用 Repository 的公共方法检查复习内容
                                         val reviewCharacters = repository.getCharactersForReview()
+
                                         if (reviewCharacters.isNotEmpty()) {
                                             val intent = Intent(
                                                 this@MainActivity,
