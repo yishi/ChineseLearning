@@ -2,9 +2,6 @@ package com.example.chineselearning.data
 
 import android.util.Log
 import androidx.lifecycle.LiveData
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 class CharacterRepository(private val dao: CharacterDao) {
 
@@ -42,14 +39,6 @@ class CharacterRepository(private val dao: CharacterDao) {
         )
         dao.insertLearningRecord(learningRecord)
 
-        Log.d("CharacterRepository", """
-        开始创建复习记录:
-        - 字符ID: $characterId
-        - 用户ID: $currentUserId
-        - 当前时间: $currentTime
-        - 时间格式化: ${java.text.SimpleDateFormat("HH:mm:ss.SSS").format(java.util.Date(currentTime))}
-    """.trimIndent())
-
         // 创建复习记录，确保立即可复习
         val reviewRecord = ReviewRecord(
             characterId = characterId,
@@ -60,22 +49,10 @@ class CharacterRepository(private val dao: CharacterDao) {
             masteryLevel = 0
         )
 
-        Log.d("CharacterRepository", """
-        复习记录详情:
-        - ID: ${reviewRecord.id}
-        - 字符ID: ${reviewRecord.characterId}
-        - 用户ID: ${reviewRecord.userId}
-        - 上次复习: ${reviewRecord.lastReviewTime}
-        - 下次复习: ${reviewRecord.nextReviewTime}
-        - 时间差(last): ${currentTime - reviewRecord.lastReviewTime}ms
-        - 时间差(next): ${currentTime - reviewRecord.nextReviewTime}ms
-        - 时间格式化: ${java.text.SimpleDateFormat("HH:mm:ss.SSS").format(java.util.Date(currentTime))}
-    """.trimIndent())
-
         dao.insertReviewRecord(reviewRecord)
         // 验证插入后的记录
-        val savedRecord = dao.getReviewRecordForCharacter(characterId, currentUserId)
-        Log.d("CharacterRepository", """
+//        val savedRecord = dao.getReviewRecordForCharacter(characterId, currentUserId)
+/*        Log.d("CharacterRepository", """
         保存后的复习记录:
         - ID: ${savedRecord?.id}
         - 字符ID: ${savedRecord?.characterId}
@@ -83,7 +60,7 @@ class CharacterRepository(private val dao: CharacterDao) {
         - 上次复习: ${savedRecord?.lastReviewTime}
         - 下次复习: ${savedRecord?.nextReviewTime}
         - 时间格式化: ${java.text.SimpleDateFormat("HH:mm:ss.SSS").format(java.util.Date(currentTime))}
-    """.trimIndent())
+    """.trimIndent())*/
 
         Log.d(
             "CharacterRepository",
@@ -126,128 +103,16 @@ class CharacterRepository(private val dao: CharacterDao) {
         return dao.getCharactersByIds(characterIds)
     }
 
-
-
-    /*suspend fun getCharactersForReview(): List<CharacterData> {
-        if (currentUserId == -1) {
-            throw IllegalStateException("User ID not set")
-        }
-
-        val currentTime = System.currentTimeMillis()
-
-        // 添加调试查询
-        val debugInfo = dao.debugReviewRecordDetails(currentTime, currentUserId)
-        Log.d("CharacterRepository", """
-            复习查询调试信息:
-            - 当前时间: ${formatTime(currentTime)}
-            - 用户ID: $currentUserId
-            - 调试记录:
-            ${debugInfo.joinToString("\n") { info ->
-            """
-                字符ID: ${info.characterId}
-                - 下次复习时间: ${info.nextReviewTime?.let { formatTime(it) }}
-                - 当前时间: ${formatTime(currentTime)}
-                - 已学习: ${info.isLearned}
-                - 已到期: ${info.isDue}
-                """.trimIndent()
-        }}
-        """.trimIndent())
-
-        // 1. 获取并分析学习记录
-        val learningRecords = dao.getAllLearningRecords(currentUserId)
-        //- 时间格式化: ${java.text.SimpleDateFormat("HH:mm:ss.SSS").format(java.util.Date(currentTime))}
-        val learningDetails = learningRecords.joinToString("\n") { record ->
-            """
-            字符ID: ${record.characterId}
-            - 学习时间: ${formatTime(record.learnedTime)}
-            - 是否已学习: ${record.isLearned}
-            - 距今时间: ${(currentTime - record.learnedTime) / 1000}秒
-            """.trimIndent()
-        }
-
-        Log.d("CharacterRepository", """
-            学习记录详细分析:
-            - 当前时间: ${formatTime(currentTime)}
-            - 总记录数: ${learningRecords.size}
-            - 记录详情:
-            $learningDetails
-        """.trimIndent())
-
-        // 2. 获取并分析复习记录
-        val reviewRecords = dao.getAllReviewRecords(currentUserId)
-        val reviewDetails = reviewRecords.joinToString("\n") { record ->
-            """
-                字符ID: ${record.characterId}
-                - 上次复习: ${formatTime(record.lastReviewTime)}
-                - 下次复习: ${formatTime(record.nextReviewTime)}
-                - 是否到期: ${record.nextReviewTime <= currentTime}
-                - 复习次数: ${record.reviewCount}
-                """.trimIndent()
-        }
-
-        Log.d("CharacterRepository", """
-            复习记录详细分析:
-            - 当前时间: ${formatTime(currentTime)}
-            - 总记录数: ${reviewRecords.size}
-            - 记录详情:
-            $reviewDetails
-        """.trimIndent())
-
-        // 3. 执行复习查询
-        val result = dao.getCharactersForReview(currentUserId.toLong(), currentTime)
-        // 4. 分析查询结果
-        val resultDetails = result.joinToString("\n") { char ->
-                """
-                ID: ${char.id}
-                - 是否有学习记录: ${learningRecords.any { it.characterId == char.id }}
-                - 学习状态: ${learningRecords.find { it.characterId == char.id }?.isLearned}
-                - 是否有复习记录: ${reviewRecords.any { it.characterId == char.id }}
-                - 复习时间: ${
-                    reviewRecords.find { it.characterId == char.id }?.nextReviewTime?.let {
-                        formatTime(
-                            it
-                        )
-                    }
-                }
-                """.trimIndent()
-            }
-        val reviewTimeExpiredCount = result.count { char ->
-            reviewRecords.any { it.characterId == char.id && it.nextReviewTime <= currentTime }
-        }
-
-        Log.d("CharacterRepository", """
-            复习查询结果分析:
-            - 当前时间: ${formatTime(currentTime)}
-            - 找到字符数: ${result.size}
-            - 字符列表:
-            $resultDetails
-            
-            查询条件验证:
-            - SQL参数: currentTime=${formatTime(currentTime)}, userId=$currentUserId
-            - 学习记录匹配数: ${
-            result.count { char ->
-                learningRecords.any { it.characterId == char.id && it.isLearned }
-            }
-        }
-            - 复习时间到期数: $reviewTimeExpiredCount   
-    """.trimIndent())
-        //return charactersForReview
-        return result
-    }*/
-
     /**
      * 格式化时间戳为可读格式
      * @param time 时间戳（毫秒）
      * @return 格式化的时间字符串（HH:mm:ss.SSS）
      */
 
-    private fun formatTime(time: Long): String {
-        return SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date(time))
-    }
+//    private fun formatTime(time: Long): String {
+//        return SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date(time))
+//    }
 
-  //  private fun formatTime(time: Long): String {
-   //     return java.text.SimpleDateFormat("HH:mm:ss.SSS").format(java.util.Date(time))
- //   }
 
     suspend fun getAllReviewRecords(): List<ReviewRecord> {
         if (currentUserId == -1) {

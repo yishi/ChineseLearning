@@ -117,29 +117,6 @@ interface CharacterDao {
     """)
     suspend fun getCharactersForReview(currentTime: Long, userId: Long): List<CharacterData>*/
 
-    @Query("""
-        SELECT 
-            rr.characterId as characterId,
-            rr.next_review_time as nextReviewTime,
-            lr.is_learned as isLearned,
-            :currentTime as currentTime,
-            CASE WHEN rr.next_review_time <= :currentTime THEN 1 ELSE 0 END as isDue
-        FROM review_records rr
-        INNER JOIN learning_records lr 
-            ON rr.characterId = lr.character_id
-            AND rr.userId = :userId 
-            AND lr.user_id = :userId
-        WHERE rr.characterId = 1
-    """)
-    suspend fun debugReviewRecordDetails(currentTime: Long, userId: Int): List<ReviewRecordDebug>
-
-    data class ReviewRecordDebug(
-        @ColumnInfo(name = "characterId") val characterId: Int,
-        @ColumnInfo(name = "nextReviewTime") val nextReviewTime: Long,
-        @ColumnInfo(name = "isLearned") val isLearned: Boolean,
-        @ColumnInfo(name = "currentTime") val currentTime: Long,
-        @ColumnInfo(name = "isDue") val isDue: Boolean
-    )
 //  1/2
     @Query("""
     -- 先获取需要复习的记录
