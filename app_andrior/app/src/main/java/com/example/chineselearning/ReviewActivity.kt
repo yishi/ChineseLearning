@@ -20,16 +20,20 @@ import java.util.Locale
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.lifecycle.lifecycleScope
+import com.example.chineselearning.utils.LanguageManager
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 class ReviewActivity : ComponentActivity(), TextToSpeech.OnInitListener {
+
     private lateinit var repository: CharacterRepository
     private lateinit var tts: TextToSpeech
     private var currentCharacter by mutableStateOf<CharacterData?>(null)
     private var showDetails by mutableStateOf(false)
     private var isReviewMode = false
     private var userId: Int = -1
+    // 添加 LanguageManager
+    private val languageManager = LanguageManager.getInstance()
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,23 +51,28 @@ class ReviewActivity : ComponentActivity(), TextToSpeech.OnInitListener {
         repository.setCurrentUser(userId)  // 设置当前用户ID
         tts = TextToSpeech(this, this)
 
+        // ... 数据库初始化代码 ...
+
         setContent {
             MaterialTheme {
                 Scaffold(
                     topBar = {
                         TopAppBar(
-                            title = { Text("复习") },
+                            // 使用语言管理器获取标题文本
+                            title = { Text(languageManager.getText("review_title")) },
                             navigationIcon = {
                                 IconButton(onClick = { finish() }) {
                                     Icon(
                                         imageVector = Icons.Default.ArrowBack,
-                                        contentDescription = "返回"
+                                        // 使用语言管理器获取返回按钮描述
+                                        contentDescription = languageManager.getText("back")
                                     )
                                 }
                             }
                         )
                     }
                 ) { paddingValues ->
+                    // ... 布局代码 ...
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
@@ -91,6 +100,7 @@ class ReviewActivity : ComponentActivity(), TextToSpeech.OnInitListener {
         loadCharactersForReview()
     }
 
+
     private fun loadCharactersForReview() {
         lifecycleScope.launch {
             try {
@@ -98,16 +108,21 @@ class ReviewActivity : ComponentActivity(), TextToSpeech.OnInitListener {
                 if (characters.isNotEmpty()) {
                     currentCharacter = characters[0]
                 } else {
-                    Toast.makeText(this@ReviewActivity, "暂无需要复习的汉字", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@ReviewActivity, languageManager.getText("no_review_chars"), Toast.LENGTH_SHORT).show()
                     finish()
                 }
             } catch (e: Exception) {
                 Log.e("ReviewActivity", "Error loading characters", e)
-                Toast.makeText(this@ReviewActivity, "加载数据时出错", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@ReviewActivity, languageManager.getText("review_error"), Toast.LENGTH_SHORT).show()
             }
         }
     }
 
+    /**
+     * 处理"记住了"按钮点击事件
+     * 1. 更新当前字符的复习状态
+     * 2. 立即加载下一个待复习的字符
+     */
     private fun markAsRemembered() {
         currentCharacter?.let { character ->
             lifecycleScope.launch {
@@ -135,14 +150,16 @@ class ReviewActivity : ComponentActivity(), TextToSpeech.OnInitListener {
         tts.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, null, null)
     }
 
+    // 修改 TTS 初始化回调
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
             val result = tts.setLanguage(Locale.CHINESE)
             if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                Toast.makeText(this, "语音功能不可用", Toast.LENGTH_SHORT).show()
+                // 使用语言管理器获取提示文本
+                Toast.makeText(this, languageManager.getText("tts_unavailable"), Toast.LENGTH_SHORT).show()
             }
         } else {
-            Toast.makeText(this, "语音初始化失败", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, languageManager.getText("tts_init_failed"), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -153,6 +170,7 @@ class ReviewActivity : ComponentActivity(), TextToSpeech.OnInitListener {
     }
 }
 
+// 修改 ReviewCard Composable
 @Composable
 fun ReviewCard(
     character: CharacterData?,
@@ -162,6 +180,9 @@ fun ReviewCard(
     onContinue: () -> Unit,
     onRead: (CharacterData) -> Unit
 ) {
+    // 获取 LanguageManager 实例
+    val languageManager = LanguageManager.getInstance()
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -171,6 +192,7 @@ fun ReviewCard(
             modifier = Modifier.padding(16.dp).fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // ... 字符显示相关代码 ...
             character?.let { char ->
                 Text(
                     text = char.character,
@@ -193,37 +215,43 @@ fun ReviewCard(
                         style = MaterialTheme.typography.bodyLarge,
                         textAlign = TextAlign.Center
                     )
+                    // 按钮区域
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 16.dp),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
+                        // 朗读按钮
                         Button(onClick = { onRead(char) }) {
-                            Text("朗读")
+                            Text(languageManager.getText("speak"))
                         }
-
+                        // 继续按钮
                         Button(onClick = onContinue) {
-                            Text("继续")
+                            Text(languageManager.getText("continue"))
                         }
                     }
                 } else {
+                    // 按钮区域
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
+                        // 记住了按钮
                         Button(onClick = onRemembered) {
-                            Text("记住了")
+                            Text(languageManager.getText("remembered"))
                         }
+                        // 没记住按钮
                         Button(onClick = onForgot) {
-                            Text("没记住")
+                            Text(languageManager.getText("forgot"))
                         }
+                        // 朗读按钮
                         Button(onClick = { onRead(char) }) {
-                            Text("朗读")
+                            Text(languageManager.getText("speak"))
                         }
                     }
                 }
-            } ?: Text("暂无需要复习的汉字")
+            } ?: Text(languageManager.getText("no_review_chars"))
         }
     }
 }

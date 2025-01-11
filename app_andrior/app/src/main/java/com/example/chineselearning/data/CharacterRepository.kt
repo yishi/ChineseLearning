@@ -121,6 +121,13 @@ class CharacterRepository(private val dao: CharacterDao) {
         return dao.getAllReviewRecords(currentUserId)
     }
 
+    /**
+     * 更新字符的复习状态并计算下次复习时间
+     *
+     * @param characterId 字符ID
+     * @param remembered true: "记住了"按钮的处理流程
+     *                   false: "没记住"按钮的处理流程
+     */
     suspend fun updateReviewStatus(characterId: Int, remembered: Boolean) {
         val reviewRecord = dao.getReviewRecordForCharacter(characterId, currentUserId)
         reviewRecord?.let {
@@ -155,6 +162,7 @@ class CharacterRepository(private val dao: CharacterDao) {
         }
     }
 
+    // 被上面的 fun updateReviewStatus 调用
     private fun calculateNextReviewTime(reviewCount: Int): Long {
         val currentTime = System.currentTimeMillis()
         return when (reviewCount) {

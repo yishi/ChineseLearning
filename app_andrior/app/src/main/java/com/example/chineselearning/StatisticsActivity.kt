@@ -19,10 +19,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.LiveData
+import com.example.chineselearning.utils.LanguageManager
 
 class StatisticsActivity : ComponentActivity() {
     private lateinit var repository: CharacterRepository
     private var currentUserId: Int = -1
+    private val languageManager = LanguageManager.getInstance()
 
     @OptIn(ExperimentalMaterial3Api::class)
 
@@ -39,12 +41,13 @@ class StatisticsActivity : ComponentActivity() {
                 Scaffold(
                     topBar = {
                         TopAppBar(
-                            title = { Text("学习统计") },
+                            // 使用语言管理器获取标题
+                            title = { Text(languageManager.getText("statistics_title")) },
                             navigationIcon = {
                                 IconButton(onClick = { finish() }) {
                                     Icon(
                                         imageVector = Icons.Default.ArrowBack,
-                                        contentDescription = "返回"
+                                        contentDescription = languageManager.getText("back")
                                     )
                                 }
                             },
@@ -72,6 +75,7 @@ fun StatisticsScreen(
     userId: Int,
     modifier: Modifier = Modifier
 ) {
+
     val learnedCharacters by repository.getAllLearnedCharactersLive(userId)
         .observeAsState(initial = emptyList())
     val masteredCharacters by repository.getMasteredCharactersLive(userId)
@@ -118,6 +122,8 @@ fun StatisticsCard(
     toReviewCount: Int,
     masteredCount: Int
 ) {
+    val languageManager = LanguageManager.getInstance()
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(4.dp)
@@ -126,20 +132,20 @@ fun StatisticsCard(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "学习统计",
+                text = languageManager.getText("statistics_title"),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
 
             Spacer(modifier = Modifier.height(16.dp))
-
+            // 学习统计数据
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                StatItem("已学习", learnedCount)
-                StatItem("待复习", toReviewCount)
-                StatItem("已掌握", masteredCount)
+                StatItem(languageManager.getText("learned_count"), learnedCount)
+                StatItem(languageManager.getText("to_review_count"), toReviewCount)
+                StatItem(languageManager.getText("mastered_count"), masteredCount)
             }
         }
     }
@@ -147,6 +153,7 @@ fun StatisticsCard(
 
 @Composable
 fun ProgressCard(progress: Float) {
+    val languageManager = LanguageManager.getInstance()
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(4.dp)
@@ -155,7 +162,7 @@ fun ProgressCard(progress: Float) {
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "学习进度",
+                text = languageManager.getText("progress_title"),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -180,6 +187,8 @@ fun ProgressCard(progress: Float) {
 
 @Composable
 fun ExplanationCard() {
+    val languageManager = LanguageManager.getInstance()
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(4.dp)
@@ -188,7 +197,7 @@ fun ExplanationCard() {
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "掌握标准说明",
+                text = languageManager.getText("mastery_title"),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -196,10 +205,7 @@ fun ExplanationCard() {
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = """一个汉字被认为已掌握需要满足以下条件：
-
-1. 该汉字已被复习至少3次
-2. 最后一次复习时选择了"记住了"（下次复习间隔>12小时）""".trimIndent(),
+                text = languageManager.getText("mastery_explanation"),
                 style = MaterialTheme.typography.bodyMedium,
                 lineHeight = MaterialTheme.typography.bodyMedium.fontSize * 1.5
             )

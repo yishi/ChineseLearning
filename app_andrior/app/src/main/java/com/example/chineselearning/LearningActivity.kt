@@ -182,8 +182,7 @@ class LearningActivity : ComponentActivity(), TextToSpeech.OnInitListener {
                                 Text(languageManager.getText("previous"))
                             }
 
-        // 下一个按钮
-
+                            // 下一个按钮
                             Button(
                                 onClick = {
                                     if (currentIndex + 1 < currentCharacters.size) {

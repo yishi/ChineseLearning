@@ -77,6 +77,42 @@ class LanguageManager private constructor() {
             "no_new_chars" -> if(isEnglish.value) "No new characters to learn" else "当前没有新的汉字可以学习"
             "all_chars_learned" -> if(isEnglish.value) "All characters have been learned" else "已完成所有汉字学习"
             "level_completed" -> if(isEnglish.value) "Current level completed" else "本级别学习完成"
+            // 复习页面相关文本
+            "review_title" -> if(isEnglish.value) "Review" else "复习"  // TopAppBar 标题
+            "back" -> if(isEnglish.value) "Back" else "返回"  // 返回按钮
+            "remembered" -> if(isEnglish.value) "Remembered" else "记住了"  // 记住了按钮
+            "forgot" -> if(isEnglish.value) "Forgot" else "没记住"  // 没记住按钮
+            "continue" -> if(isEnglish.value) "Continue" else "继续"  // 继续按钮
+            "speak" -> if(isEnglish.value) "Speak" else "朗读"  // 朗读按钮
+            // 复习页面 Toast 提示信息
+            "tts_unavailable" -> if(isEnglish.value) "Voice function is not available" else "语音功能不可用"
+            "tts_init_failed" -> if(isEnglish.value) "Voice initialization failed" else "语音初始化失败"
+            "review_error" -> if(isEnglish.value) "Error loading review characters" else "加载复习汉字时出错"
+            "no_review_chars" -> if(isEnglish.value) "No characters need to be reviewed" else "暂无需要复习的汉字"
+            // 统计页面相关文本
+            "statistics_title" -> if(isEnglish.value) "Statistics" else "学习统计"  // TopAppBar 标题
+            "back" -> if(isEnglish.value) "Back" else "返回"  // 返回按钮
+            // 统计卡片标题
+            "progress_title" -> if(isEnglish.value) "Learning Progress" else "学习进度"
+            "mastery_title" -> if(isEnglish.value) "Mastery Standards" else "掌握标准说明"
+            // 统计数据标签
+            "learned_count" -> if(isEnglish.value) "Learned" else "已学习"
+            "to_review_count" -> if(isEnglish.value) "To Review" else "待复习"
+            "mastered_count" -> if(isEnglish.value) "Mastered" else "已掌握"
+            // 掌握标准说明文本
+            "mastery_explanation" -> if(isEnglish.value)
+                """A character is considered mastered when:
+
+1. It has been reviewed at least 3 times
+2. The last review was marked as "Remembered" (next review interval >12 hours)"""
+            else
+                """一个汉字被认为已掌握需要满足以下条件：
+
+1. 该汉字已被复习至少3次
+2. 最后一次复习时选择了"记住了"（下次复习间隔>12小时）"""
+            // 统计页面错误提示
+            "stats_load_error" -> if(isEnglish.value) "Error loading statistics" else "加载统计数据时出错"
+
             else -> ""
         }
     }
