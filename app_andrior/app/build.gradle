@@ -10,8 +10,8 @@ android {
 
     defaultConfig {
         applicationId "com.example.chineselearning"
-        minSdk 24
-        targetSdk 34
+        minSdk 24    // 最低支持 Android 7.0
+        targetSdk 34    // 目标支持到 Android 14
         versionCode 1
         versionName "1.0"
 
